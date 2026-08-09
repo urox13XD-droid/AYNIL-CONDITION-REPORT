@@ -48,6 +48,8 @@ export interface FilterItem {
   model: string;
   notes: string;
   shape: FilterShape;
+  /** Dioptrie / Dioptrie Split only — Ø156mm instead of the default Ø138mm */
+  diopterLarge: boolean;
   front: DiagramState;
   back: DiagramState;
 }

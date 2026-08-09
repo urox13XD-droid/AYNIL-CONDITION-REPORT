@@ -99,10 +99,12 @@ const CATEGORY_DIMS: Record<string, { width: number; height: number }> = {
   "Polaframe 4x5.6": autoDims(1, 5.65 * FILTER_UNIT_PX),
   "Pola Ø138mm": squareDims(138 / MM_PER_INCH),
   "Pola Ø156mm": squareDims(156 / MM_PER_INCH),
-  Dioptrie: squareDims(4),
-  "Dioptrie Split": squareDims(4),
+  Dioptrie: squareDims(138 / MM_PER_INCH),
+  "Dioptrie Split": squareDims(138 / MM_PER_INCH),
   Autre: squareDims(4.5),
 };
+
+const DIOPTER_CATEGORIES = new Set(["Dioptrie", "Dioptrie Split"]);
 
 const ND_GRADES = ["N 0.3", "N 0.6", "N 0.9", "N 1.2", "N 1.5", "N 1.8", "N 2.1", "N 2.4"];
 const DEG_GRADES = ["N 0.3", "N 0.6", "N 0.9"];
@@ -132,6 +134,7 @@ export function newFilterItem(): FilterItem {
     model: "",
     notes: "",
     shape: "rect",
+    diopterLarge: false,
     front: emptyDiagram(),
     back: emptyDiagram(),
   };
@@ -153,7 +156,10 @@ function FilterItemCard({
   const [tool, setTool] = useState<ActiveTool>("pen");
   const selectModels = SELECT_MODELS[item.category];
   const art = CATEGORY_ART[item.category];
-  const dims = CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre;
+  const isDiopter = DIOPTER_CATEGORIES.has(item.category);
+  const dims = isDiopter
+    ? squareDims((item.diopterLarge ? 156 : 138) / MM_PER_INCH)
+    : (CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre);
   const gradient = GRADIENT_CATEGORY[item.category];
   const dividerLine = item.category === "Dioptrie Split";
 
@@ -198,6 +204,18 @@ function FilterItemCard({
           ) : (
             <TextField label="Modèle" value={item.model} onChange={(v) => onChange({ ...item, model: v })} />
           ))}
+
+        {isDiopter && (
+          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-black/70">
+            <input
+              type="checkbox"
+              checked={item.diopterLarge}
+              onChange={(e) => onChange({ ...item, diopterLarge: e.target.checked })}
+              className="h-3.5 w-3.5 accent-black"
+            />
+            Ø156mm (au lieu de 138mm)
+          </label>
+        )}
 
         <NotesField value={item.notes} onChange={(v) => onChange({ ...item, notes: v })} />
 
