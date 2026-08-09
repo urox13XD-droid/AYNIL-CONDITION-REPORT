@@ -35,14 +35,14 @@ export function SharedSessionBar({
 
   if (sessionName) {
     return (
-      <div className="no-print flex items-center gap-3 border-b-[2.5px] border-black bg-black/5 px-4 py-1.5">
+      <div className="no-print flex items-center gap-3 overflow-x-auto border-b-[2.5px] border-black bg-black/5 px-4 py-1.5">
         <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[status]}`} />
-        <span className="text-xs font-bold uppercase tracking-wide">
+        <span className="shrink-0 text-xs font-bold uppercase tracking-wide">
           Session partagée : <span className="font-mono normal-case">{sessionName}</span>
         </span>
-        <span className="text-[10px] font-semibold text-black/50">{STATUS_LABEL[status]}</span>
-        {error && <span className="text-[10px] font-semibold text-red-600">{error}</span>}
-        <ComicButton onClick={onLeave} className="ml-auto">
+        <span className="shrink-0 text-[10px] font-semibold text-black/50">{STATUS_LABEL[status]}</span>
+        {error && <span className="shrink-0 text-[10px] font-semibold text-red-600">{error}</span>}
+        <ComicButton onClick={onLeave} className="ml-auto shrink-0">
           Quitter la session
         </ComicButton>
       </div>
@@ -51,22 +51,24 @@ export function SharedSessionBar({
 
   return (
     <form
-      className="no-print flex items-center gap-2 border-b-[2.5px] border-black bg-black/5 px-4 py-1.5"
+      className="no-print flex items-center gap-2 overflow-x-auto border-b-[2.5px] border-black bg-black/5 px-4 py-1.5"
       onSubmit={(e) => {
         e.preventDefault();
         const v = draft.trim();
         if (v) onJoin(v);
       }}
     >
-      <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Session partagée</span>
+      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-black/60">Session partagée</span>
       <input
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         placeholder="Nom de session (ex. tournage-toto)"
-        className="min-w-0 max-w-xs flex-1 rounded-md border-[1.5px] border-black/40 bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-black"
+        className="min-w-0 max-w-xs shrink-0 rounded-md border-[1.5px] border-black/40 bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-black"
       />
-      <ComicButton type="submit">Rejoindre / Créer</ComicButton>
-      {error && <span className="text-[10px] font-semibold text-red-600">{error}</span>}
+      <ComicButton type="submit" className="shrink-0">
+        Rejoindre / Créer
+      </ComicButton>
+      {error && <span className="shrink-0 text-[10px] font-semibold text-red-600">{error}</span>}
     </form>
   );
 }
