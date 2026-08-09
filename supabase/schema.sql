@@ -12,6 +12,11 @@ create table if not exists condition_sessions (
 
 alter table condition_sessions enable row level security;
 
+-- RLS policies only take effect on top of a baseline table grant — without
+-- this, Postgres rejects every request from the anon key with a flat
+-- "permission denied for table" before it even reaches the policies below.
+grant select, insert, update on condition_sessions to anon;
+
 -- No login system in this app: knowing (or guessing) the session name is what
 -- grants access, the same trust model as a shared document link. Anyone with
 -- the public anon key can read/write any session row.
