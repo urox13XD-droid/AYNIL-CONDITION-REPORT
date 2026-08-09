@@ -119,21 +119,24 @@ export function autoDims(aspect: number, target = 176): { width: number; height:
   return aspect >= 1 ? { width: target, height: target / aspect } : { width: target * aspect, height: target };
 }
 
-// graduated-ND thumbnail tints — "soft" blends across the whole glass, "hard" snaps to a narrow band in the middle
-const GRADIENT_CSS: Record<"soft" | "hard", string> = {
-  soft: "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%)",
-  hard: "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 46%, rgba(0,0,0,0.6) 54%, rgba(0,0,0,0.6) 100%)",
-};
+// graduated-ND thumbnail tints — "soft" blends across the whole glass, "hard" snaps to a narrow band in the middle;
+// the back side mirrors the gradient so it isn't a plain copy of the front
+function gradientCss(kind: "soft" | "hard", flip: boolean): string {
+  const dir = flip ? "to left" : "to right";
+  return kind === "soft"
+    ? `linear-gradient(${dir}, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%)`
+    : `linear-gradient(${dir}, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 46%, rgba(0,0,0,0.6) 54%, rgba(0,0,0,0.6) 100%)`;
+}
 
 // diagrams shrink to these sizes when printing/exporting so a full report
-// (e.g. a dozen lenses) fits on one or two pages instead of one giant box per item
-const PRINT_TARGET_PX = 42;
+// (e.g. a dozen lenses) fits several-up on one page instead of one giant box per item
+const PRINT_TARGET_PX = 28;
 const PRINT_SIZE_DIMS: Record<string, { width: number; height: number }> = {
-  "circle-md": { width: 42, height: 42 },
-  "circle-sm": { width: 32, height: 32 },
-  "rect-md": { width: 42, height: 33 },
-  "rect-sm": { width: 32, height: 25 },
-  "rect-screen": { width: 56, height: 33 },
+  "circle-md": { width: 28, height: 28 },
+  "circle-sm": { width: 22, height: 22 },
+  "rect-md": { width: 28, height: 22 },
+  "rect-sm": { width: 22, height: 17 },
+  "rect-screen": { width: 38, height: 22 },
 };
 function scaleToPrint(dims: { width: number; height: number }): { width: number; height: number } {
   const scale = PRINT_TARGET_PX / Math.max(dims.width, dims.height);
@@ -151,9 +154,10 @@ export function MarkableDiagram({
   backgroundSrc,
   dims,
   frameless = false,
-  imgFlip180 = false,
+  imgMirror = false,
   dividerLine = false,
   gradient,
+  gradientFlip = false,
 }: {
   shape: "circle" | "rect";
   value: DiagramState;
@@ -170,12 +174,14 @@ export function MarkableDiagram({
   dims?: { width: number; height: number };
   /** no border/background chrome — just the reference art (or nothing) with marks drawn straight on top */
   frameless?: boolean;
-  /** rotate `backgroundSrc` 180° — used to reuse one traced image for both the front and back side */
-  imgFlip180?: boolean;
+  /** mirror `backgroundSrc` horizontally (left/right only, keeps the same way up) — used to reuse one traced image for both the front and back side */
+  imgMirror?: boolean;
   /** a fixed line across the middle — split diopters, drawn under the marks */
   dividerLine?: boolean;
   /** graduated-ND tint shown as a background gradient instead of traced art */
   gradient?: "soft" | "hard";
+  /** mirror the gradient direction — used so the back side isn't a plain copy of the front */
+  gradientFlip?: boolean;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<MarkPoint[] | null>(null);
@@ -340,7 +346,7 @@ export function MarkableDiagram({
           touchAction: "none",
           ...(effectiveDims ? { width: effectiveDims.width, height: effectiveDims.height } : undefined),
           ...(shade ? { backgroundColor: "#e5e5e5" } : undefined),
-          ...(gradient ? { backgroundImage: GRADIENT_CSS[gradient] } : undefined),
+          ...(gradient ? { backgroundImage: gradientCss(gradient, gradientFlip) } : undefined),
         }}
       >
         {backgroundSrc && (
@@ -349,7 +355,7 @@ export function MarkableDiagram({
             src={backgroundSrc}
             alt=""
             draggable={false}
-            className={`pointer-events-none absolute inset-0 h-full w-full select-none object-contain ${imgFlip180 ? "rotate-180" : ""}`}
+            className={`pointer-events-none absolute inset-0 h-full w-full select-none object-contain ${imgMirror ? "-scale-x-100" : ""}`}
           />
         )}
         <svg
@@ -364,7 +370,7 @@ export function MarkableDiagram({
           onPointerLeave={endDrag}
           onPointerCancel={endDrag}
         >
-          {dividerLine && <line x1={4} y1={50} x2={96} y2={50} stroke="#000" strokeWidth={1} />}
+          {dividerLine && <line x1={50} y1={4} x2={50} y2={96} stroke="#000" strokeWidth={2.4} />}
           {value.marks.map(renderMark)}
           {draftPreview}
         </svg>

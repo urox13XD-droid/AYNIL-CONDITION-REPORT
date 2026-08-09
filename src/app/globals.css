@@ -54,11 +54,18 @@ body {
   }
   .print-page {
     break-inside: avoid;
-    padding: 5px !important;
+    padding: 4px !important;
     border-width: 1.25px !important;
     border-radius: 4px !important;
     box-shadow: none !important;
-    gap: 3px !important;
+  }
+  .print-page * {
+    gap: 1.5px !important;
+  }
+  .print-page [class*="pt-"],
+  .print-page [class*="pb-"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
   .print-page input,
   .print-page select,
@@ -69,14 +76,10 @@ body {
     min-height: 0 !important;
   }
   .print-page textarea {
-    height: 12px !important;
+    height: 10px !important;
   }
   .print-page label span:first-child,
   .print-page > div > span.text-\[10px\] {
     font-size: 5px !important;
-  }
-  .print-page .flex.flex-col.gap-3,
-  .print-page .flex.flex-col.gap-0\.5 {
-    gap: 2px !important;
   }
 }

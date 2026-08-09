@@ -65,7 +65,7 @@ const GRADIENT_CATEGORY: Record<string, "soft" | "hard"> = {
 };
 
 // real reference art for the polarizer frames — same traced image reused for
-// the back side, just flipped 180° (see imgFlip180 below)
+// the back side, mirrored horizontally (see imgMirror below)
 const CATEGORY_ART: Record<string, string> = {
   "Polaframe 6x6": "/polaframe-6x6.png",
   "Polaframe 4x5.6": "/polaframe-4x5.6.png",
@@ -93,9 +93,10 @@ const CATEGORY_DIMS: Record<string, { width: number; height: number }> = {
   "Dégradé Hard 6x6": squareDims(6),
   "Dégradé Soft 4x5.6": landscapeDims(4, 5.65),
   "Dégradé Hard 4x5.6": landscapeDims(4, 5.65),
-  // real traced-art aspect ratio (the plate itself is squarish regardless of the glass size it holds)
-  "Polaframe 6x6": autoDims(1203 / 1308, 200),
-  "Polaframe 4x5.6": autoDims(1, 200),
+  // real traced-art aspect ratio, scaled to the same footprint as the equivalent plain Neutre size
+  // (the plate itself is squarish regardless of the glass size it holds)
+  "Polaframe 6x6": autoDims(1203 / 1308, 6 * FILTER_UNIT_PX),
+  "Polaframe 4x5.6": autoDims(1, 5.65 * FILTER_UNIT_PX),
   "Pola Ø138mm": squareDims(138 / MM_PER_INCH),
   "Pola Ø156mm": squareDims(156 / MM_PER_INCH),
   Dioptrie: squareDims(4),
@@ -219,9 +220,10 @@ function FilterItemCard({
             dims={dims}
             frameless={!!art}
             backgroundSrc={art}
-            imgFlip180={!!art}
+            imgMirror={!!art}
             dividerLine={dividerLine}
             gradient={gradient}
+            gradientFlip
             value={item.back}
             onChange={(d) => onChange({ ...item, back: d })}
             tool={tool}
