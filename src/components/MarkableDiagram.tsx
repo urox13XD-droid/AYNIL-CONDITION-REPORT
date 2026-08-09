@@ -370,7 +370,7 @@ export function MarkableDiagram({
           onPointerLeave={endDrag}
           onPointerCancel={endDrag}
         >
-          {dividerLine && <line x1={50} y1={4} x2={50} y2={96} stroke="#000" strokeWidth={2.4} />}
+          {dividerLine && <line x1={50} y1={0} x2={50} y2={100} stroke="#000" strokeWidth={2.4} />}
           {value.marks.map(renderMark)}
           {draftPreview}
         </svg>
