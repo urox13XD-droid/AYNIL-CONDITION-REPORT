@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AddItemTile } from "@/components/AddItemTile";
 import { HeaderFields } from "@/components/HeaderFields";
 import { ItemCardShell } from "@/components/ItemCardShell";
-import { ActiveTool, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
+import { ActiveTool, autoDims, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
 import { useItemSelection } from "@/lib/useItemSelection";
@@ -63,8 +63,9 @@ const CATEGORY_DIMS: Record<string, { width: number; height: number }> = {
   "Neutre 4x5.6": landscapeDims(4, 5.65),
   "Neutre 5x5": squareDims(5),
   "Neutre 6x6": squareDims(6),
-  "Polaframe 6x6": squareDims(6),
-  "Polaframe 4x5.6": landscapeDims(4, 5.65),
+  // real traced-art aspect ratio (the plate itself is squarish regardless of the glass size it holds)
+  "Polaframe 6x6": autoDims(1203 / 1308, 200),
+  "Polaframe 4x5.6": autoDims(1, 200),
   "Pola Ø138mm": squareDims(138 / MM_PER_INCH),
   "Pola Ø156mm": squareDims(156 / MM_PER_INCH),
   Dioptrie: squareDims(4),

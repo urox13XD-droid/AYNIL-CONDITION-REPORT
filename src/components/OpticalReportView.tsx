@@ -102,13 +102,15 @@ function OpticalItemCard({
     >
       <div className="flex flex-col gap-3">
         {item.seriesOn && (
-          <div className="flex items-center gap-2 rounded-md border-[2px] border-black bg-black px-2.5 py-1 text-white">
-            <span className="shrink-0 text-[9px] font-bold uppercase tracking-widest text-white/60">Série</span>
+          <div className="flex items-center gap-2 rounded-md border-[2px] border-black bg-neutral-100 px-2.5 py-1 text-black">
+            <span className="shrink-0 rounded-sm border-[1.5px] border-black/50 px-1 py-0.5 text-[9px] font-bold uppercase tracking-widest text-black/60">
+              Série
+            </span>
             <input
               value={item.seriesLabel}
               onChange={(e) => onChange({ ...item, seriesLabel: e.target.value })}
               placeholder="Ex. Cooke S4"
-              className="font-display min-w-0 flex-1 bg-transparent text-sm uppercase tracking-wide outline-none placeholder:text-white/40"
+              className="font-display min-w-0 flex-1 bg-transparent text-sm uppercase tracking-wide outline-none placeholder:text-black/30"
             />
           </div>
         )}
