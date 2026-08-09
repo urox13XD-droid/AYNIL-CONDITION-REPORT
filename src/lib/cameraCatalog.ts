@@ -10,6 +10,7 @@ export interface CameraCatalogEntry {
 // same "camera" category devices as AYNIL Video Config, so a body looks the
 // same on both tools
 export const CAMERA_CATALOG: CameraCatalogEntry[] = [
+  { id: "dji-ronin-4d", name: "DJI Ronin 4D", iconUrl: "/devices/device-dji-ronin-4d.png", iconAspect: 1.0727 },
   { id: "alexa-35", name: "Arri Alexa 35", iconUrl: "/devices/device-alexa-35.png", iconAspect: 1.8525 },
   { id: "alexa-mini-lf", name: "Arri Alexa Mini LF", iconUrl: "/devices/device-alexa-mini-lf.png", iconAspect: 1.9532 },
   { id: "alexa-mini", name: "Arri Alexa Mini", iconUrl: "/devices/device-alexa-mini.png", iconAspect: 1.7704 },
