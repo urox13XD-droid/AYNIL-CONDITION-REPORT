@@ -294,8 +294,9 @@ export function MarkableDiagram({
   return (
     <div className="flex flex-col items-center gap-1">
       <div
-        className={`relative overflow-hidden ${chromeClass} ${sizeClass}`}
+        className={`relative touch-none overflow-hidden overscroll-contain ${chromeClass} ${sizeClass}`}
         style={{
+          touchAction: "none",
           ...(dims ? { width: dims.width, height: dims.height } : undefined),
           ...(shade ? { backgroundColor: "#e5e5e5" } : undefined),
         }}
@@ -314,6 +315,7 @@ export function MarkableDiagram({
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
           className="absolute inset-0 h-full w-full touch-none"
+          style={{ touchAction: "none" }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}

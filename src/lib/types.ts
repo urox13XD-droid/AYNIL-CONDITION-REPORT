@@ -1,4 +1,4 @@
-export type ReportKind = "optical" | "filter" | "monitoring";
+export type ReportKind = "optical" | "filter" | "monitoring" | "camera";
 
 /** normalized 0..1 coordinates within a diagram's own bounding box */
 export interface MarkPoint {
@@ -73,6 +73,19 @@ export interface MonitoringItem {
   screen: DiagramState;
 }
 
+export interface CameraItem {
+  id: string;
+  name: string;
+  /** CAMERA_CATALOG id, set when `name` matches a known body — drives the traced reference art */
+  deviceId?: string;
+  serial: string;
+  notes: string;
+  /** always shown — a plain square to mark sensor damage (dust, scratches) */
+  sensor: DiagramState;
+  /** the camera body — only meaningful once a catalog body is picked, drawn on its real artwork */
+  body: DiagramState;
+}
+
 export interface ReportHeader {
   date: string;
   prod: string;
@@ -98,12 +111,14 @@ export const REPORT_LABELS: Record<ReportKind, string> = {
   optical: "Optical Report",
   filter: "Filter Report",
   monitoring: "Monitoring Report",
+  camera: "Camera Report",
 };
 
 export const REPORT_TITLES: Record<ReportKind, string> = {
   optical: "État des optiques",
   filter: "État des filtres",
   monitoring: "État des moniteurs",
+  camera: "État des caméras",
 };
 
 export function newId(prefix: string): string {

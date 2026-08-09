@@ -1,6 +1,6 @@
 import { REPORT_LABELS, ReportKind } from "@/lib/types";
 
-const ORDER: ReportKind[] = ["optical", "filter", "monitoring"];
+const ORDER: ReportKind[] = ["optical", "filter", "monitoring", "camera"];
 
 export function ReportTabs({ active, onChange }: { active: ReportKind; onChange: (k: ReportKind) => void }) {
   return (

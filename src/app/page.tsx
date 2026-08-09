@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import NextImage from "next/image";
+import { CameraReportView } from "@/components/CameraReportView";
 import { FilterReportView } from "@/components/FilterReportView";
 import { MonitoringReportView } from "@/components/MonitoringReportView";
 import { OpticalReportView } from "@/components/OpticalReportView";
@@ -11,7 +12,7 @@ import { Toolbar } from "@/components/Toolbar";
 import { UndoRedoDock } from "@/components/UndoRedoDock";
 import { useReportSession } from "@/lib/useReportSession";
 import { useSharedSession } from "@/lib/useSharedSession";
-import { FilterItem, MonitoringItem, OpticalEntry, ReportKind } from "@/lib/types";
+import { CameraItem, FilterItem, MonitoringItem, OpticalEntry, ReportKind } from "@/lib/types";
 
 export default function Home() {
   const [activeKind, setActiveKind] = useState<ReportKind>("optical");
@@ -20,7 +21,8 @@ export default function Home() {
   const optical = useReportSession<OpticalEntry>("optical");
   const filter = useReportSession<FilterItem>("filter");
   const monitoring = useReportSession<MonitoringItem>("monitoring");
-  const shared = useSharedSession(optical, filter, monitoring);
+  const camera = useReportSession<CameraItem>("camera");
+  const shared = useSharedSession(optical, filter, monitoring, camera);
 
   useEffect(() => {
     if (!toast) return;
@@ -28,7 +30,8 @@ export default function Home() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const active = activeKind === "optical" ? optical : activeKind === "filter" ? filter : monitoring;
+  const active =
+    activeKind === "optical" ? optical : activeKind === "filter" ? filter : activeKind === "monitoring" ? monitoring : camera;
 
   const handleSave = useCallback(() => {
     active.save();
@@ -64,7 +67,7 @@ export default function Home() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [active]);
 
-  if (!optical.session.loaded || !filter.session.loaded || !monitoring.session.loaded) return null;
+  if (!optical.session.loaded || !filter.session.loaded || !monitoring.session.loaded || !camera.session.loaded) return null;
 
   return (
     <div className="flex h-screen flex-col bg-white">
@@ -105,6 +108,14 @@ export default function Home() {
             onHeaderChange={monitoring.setHeader}
             items={monitoring.session.items}
             onItemsChange={monitoring.setItems}
+          />
+        )}
+        {activeKind === "camera" && (
+          <CameraReportView
+            header={camera.session.header}
+            onHeaderChange={camera.setHeader}
+            items={camera.session.items}
+            onItemsChange={camera.setItems}
           />
         )}
       </main>
