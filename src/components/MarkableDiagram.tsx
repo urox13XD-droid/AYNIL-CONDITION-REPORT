@@ -54,6 +54,11 @@ const TOOL_ICON: Record<ActiveTool, React.ReactNode> = {
       <path d="M4 20c3-1 4-9 8-13 1.5-1.5 3.5.5 2 2-4 4-12 5-10 11" />
     </svg>
   ),
+  "pen-thin": (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20c3-1 4-9 8-13 1.5-1.5 3.5.5 2 2-4 4-12 5-10 11" />
+    </svg>
+  ),
   eraser: (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
       <path d="M18 13 8 3 3 8l10 10M8 21h11" />
@@ -63,14 +68,15 @@ const TOOL_ICON: Record<ActiveTool, React.ReactNode> = {
 };
 
 const TOOL_LABEL: Record<ActiveTool, string> = {
+  pen: "Libre",
+  "pen-thin": "Libre fin (micro-rayures)",
   scratch: "Rayure",
   impact: "Pok / impact",
   smudge: "Tache",
-  pen: "Libre",
   eraser: "Gomme",
 };
 
-const TOOL_ORDER: ActiveTool[] = ["scratch", "impact", "smudge", "pen", "eraser"];
+const TOOL_ORDER: ActiveTool[] = ["pen", "pen-thin", "scratch", "impact", "smudge", "eraser"];
 
 export function MarkToolPalette({
   tool,
@@ -200,7 +206,7 @@ export function MarkableDiagram({
     draggingRef.current = false;
     const prev = draftRef.current;
     updateDraft(null);
-    if (prev && prev.length >= 2 && (tool === "scratch" || tool === "pen")) {
+    if (prev && prev.length >= 2 && (tool === "scratch" || tool === "pen" || tool === "pen-thin")) {
       const span = Math.hypot(prev[prev.length - 1].x - prev[0].x, prev[prev.length - 1].y - prev[0].y);
       if (span >= MIN_DRAG) commitMark(tool, prev);
     }
@@ -249,14 +255,14 @@ export function MarkableDiagram({
       const [c] = pts;
       return <circle key={m.id} cx={c.x} cy={c.y} r={3} fill="none" stroke="#000" strokeWidth={0.7} strokeDasharray="1.4 1.4" />;
     }
-    if (m.tool === "pen" && pts.length >= 2) {
+    if ((m.tool === "pen" || m.tool === "pen-thin") && pts.length >= 2) {
       return (
         <polyline
           key={m.id}
           points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
           fill="none"
           stroke="#000"
-          strokeWidth={0.9}
+          strokeWidth={m.tool === "pen-thin" ? 0.35 : 0.9}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -272,13 +278,13 @@ export function MarkableDiagram({
       const b = { x: (draft[1] ?? draft[0]).x * 100, y: (draft[1] ?? draft[0]).y * 100 };
       return <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#000" strokeWidth={0.9} strokeDasharray="1.5 1" strokeLinecap="round" />;
     }
-    if (tool === "pen" && draft.length >= 2) {
+    if ((tool === "pen" || tool === "pen-thin") && draft.length >= 2) {
       return (
         <polyline
           points={draft.map((p) => `${p.x * 100},${p.y * 100}`).join(" ")}
           fill="none"
           stroke="#000"
-          strokeWidth={0.9}
+          strokeWidth={tool === "pen-thin" ? 0.35 : 0.9}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
