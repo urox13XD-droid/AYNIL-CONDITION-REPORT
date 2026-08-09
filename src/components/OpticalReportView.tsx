@@ -76,12 +76,14 @@ function SeriesNotchButton({ open, onToggle }: { open: boolean; onToggle: () => 
 function OpticalItemCard({
   item,
   onChange,
+  onToggleSeries,
   onRemove,
   selected,
   onToggleSelect,
 }: {
   item: OpticalItem;
   onChange: (item: OpticalItem) => void;
+  onToggleSeries: () => void;
   onRemove: () => void;
   selected: boolean;
   onToggleSelect: () => void;
@@ -95,15 +97,15 @@ function OpticalItemCard({
       onToggleSelect={onToggleSelect}
       cornerNotch={
         <>
-          <SeriesNotchButton open={item.seriesOn} onToggle={() => onChange({ ...item, seriesOn: !item.seriesOn })} />
+          <SeriesNotchButton open={item.seriesOn} onToggle={onToggleSeries} />
           <BodyNotchButton open={item.bodyOpen} onToggle={() => onChange({ ...item, bodyOpen: !item.bodyOpen })} />
         </>
       }
     >
       <div className="flex flex-col gap-3">
         {item.seriesOn && (
-          <div className="flex items-center gap-2 rounded-md border-[2px] border-black bg-neutral-100 px-2.5 py-1 text-black">
-            <span className="shrink-0 rounded-sm border-[1.5px] border-black/50 px-1 py-0.5 text-[9px] font-bold uppercase tracking-widest text-black/60">
+          <div className="flex items-center gap-2 rounded-md border-[2px] border-black bg-neutral-300 px-2.5 py-1 text-black">
+            <span className="shrink-0 rounded-sm border-[1.5px] border-black/60 px-1 py-0.5 text-[9px] font-bold uppercase tracking-widest text-black/70">
               Série
             </span>
             <input
@@ -174,20 +176,39 @@ export function OpticalReportView({
   const removeEntry = (id: string) => onItemsChange(items.filter((e) => e.id !== id));
   const addItem = () => onItemsChange([...items, newOpticalItem()]);
 
+  // toggling a card into a series copies the series name from its left
+  // neighbour when that one is already in a series, so it only has to be
+  // typed once per series — otherwise it's seeded from this card's own name
+  // field (which then becomes just the focal length)
+  const toggleSeries = (id: string) => {
+    const idx = items.findIndex((e) => e.id === id);
+    const item = items[idx];
+    if (item.seriesOn) {
+      onItemsChange(items.map((e) => (e.id === id ? { ...e, seriesOn: false } : e)));
+      return;
+    }
+    const left = idx > 0 ? items[idx - 1] : undefined;
+    const inheritLabel = left?.seriesOn ? left.seriesLabel : "";
+    const seriesLabel = inheritLabel || item.name.trim();
+    const name = inheritLabel ? item.name : "";
+    onItemsChange(items.map((e) => (e.id === id ? { ...e, seriesOn: true, seriesLabel, name } : e)));
+  };
+
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-6">
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-6 print:max-w-full print:gap-1.5 print:p-2">
       <HeaderFields kind="optical" header={header} onChange={onHeaderChange} />
-      <p className="text-xs italic text-black/50">
+      <p className="no-print text-xs italic text-black/50">
         NB : pour repérer l&apos;orientation de l&apos;optique, marquez un point sur la monture à droite pour la face
         avant, à gauche pour la face arrière. Le petit bouton en haut à droite de chaque optique permet de
         l&apos;associer à une série (ex. Cooke S4) — le champ principal ne contient alors que la focale.
       </p>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="report-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((entry) => (
           <OpticalItemCard
             key={entry.id}
             item={entry}
             onChange={(next) => updateEntry(entry.id, next)}
+            onToggleSeries={() => toggleSeries(entry.id)}
             onRemove={() => removeEntry(entry.id)}
             selected={selection.selected.has(entry.id)}
             onToggleSelect={() => selection.toggle(entry.id)}

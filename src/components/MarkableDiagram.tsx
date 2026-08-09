@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { DiagramState, Mark, MarkPoint, MarkTool, newId } from "@/lib/types";
+import { useIsPrinting } from "@/lib/useIsPrinting";
 
 export type ActiveTool = MarkTool | "eraser";
 
@@ -118,6 +119,27 @@ export function autoDims(aspect: number, target = 176): { width: number; height:
   return aspect >= 1 ? { width: target, height: target / aspect } : { width: target * aspect, height: target };
 }
 
+// graduated-ND thumbnail tints — "soft" blends across the whole glass, "hard" snaps to a narrow band in the middle
+const GRADIENT_CSS: Record<"soft" | "hard", string> = {
+  soft: "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%)",
+  hard: "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 46%, rgba(0,0,0,0.6) 54%, rgba(0,0,0,0.6) 100%)",
+};
+
+// diagrams shrink to these sizes when printing/exporting so a full report
+// (e.g. a dozen lenses) fits on one or two pages instead of one giant box per item
+const PRINT_TARGET_PX = 42;
+const PRINT_SIZE_DIMS: Record<string, { width: number; height: number }> = {
+  "circle-md": { width: 42, height: 42 },
+  "circle-sm": { width: 32, height: 32 },
+  "rect-md": { width: 42, height: 33 },
+  "rect-sm": { width: 32, height: 25 },
+  "rect-screen": { width: 56, height: 33 },
+};
+function scaleToPrint(dims: { width: number; height: number }): { width: number; height: number } {
+  const scale = PRINT_TARGET_PX / Math.max(dims.width, dims.height);
+  return { width: dims.width * scale, height: dims.height * scale };
+}
+
 export function MarkableDiagram({
   shape,
   value,
@@ -130,6 +152,8 @@ export function MarkableDiagram({
   dims,
   frameless = false,
   imgFlip180 = false,
+  dividerLine = false,
+  gradient,
 }: {
   shape: "circle" | "rect";
   value: DiagramState;
@@ -148,11 +172,16 @@ export function MarkableDiagram({
   frameless?: boolean;
   /** rotate `backgroundSrc` 180° — used to reuse one traced image for both the front and back side */
   imgFlip180?: boolean;
+  /** a fixed line across the middle — split diopters, drawn under the marks */
+  dividerLine?: boolean;
+  /** graduated-ND tint shown as a background gradient instead of traced art */
+  gradient?: "soft" | "hard";
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<MarkPoint[] | null>(null);
   const draftRef = useRef<MarkPoint[] | null>(null);
   const draggingRef = useRef(false);
+  const isPrinting = useIsPrinting();
 
   const updateDraft = (points: MarkPoint[] | null) => {
     draftRef.current = points;
@@ -296,8 +325,11 @@ export function MarkableDiagram({
     return null;
   })();
 
-  const sizeClass = dims ? "" : (SIZE_CLASSES[`${shape}-${size}`] ?? SIZE_CLASSES[`${shape}-md`]);
-  const roundedClass = dims ? (shape === "circle" ? "rounded-full" : "rounded-md") : "";
+  const effectiveDims = isPrinting
+    ? (dims ? scaleToPrint(dims) : (PRINT_SIZE_DIMS[`${shape}-${size}`] ?? PRINT_SIZE_DIMS[`${shape}-md`]))
+    : dims;
+  const sizeClass = effectiveDims ? "" : (SIZE_CLASSES[`${shape}-${size}`] ?? SIZE_CLASSES[`${shape}-md`]);
+  const roundedClass = effectiveDims ? (shape === "circle" ? "rounded-full" : "rounded-md") : "";
   const chromeClass = frameless ? "" : `border-[2.5px] border-black bg-white ${roundedClass}`;
 
   return (
@@ -306,8 +338,9 @@ export function MarkableDiagram({
         className={`relative touch-none overflow-hidden overscroll-contain ${chromeClass} ${sizeClass}`}
         style={{
           touchAction: "none",
-          ...(dims ? { width: dims.width, height: dims.height } : undefined),
+          ...(effectiveDims ? { width: effectiveDims.width, height: effectiveDims.height } : undefined),
           ...(shade ? { backgroundColor: "#e5e5e5" } : undefined),
+          ...(gradient ? { backgroundImage: GRADIENT_CSS[gradient] } : undefined),
         }}
       >
         {backgroundSrc && (
@@ -331,6 +364,7 @@ export function MarkableDiagram({
           onPointerLeave={endDrag}
           onPointerCancel={endDrag}
         >
+          {dividerLine && <line x1={4} y1={50} x2={96} y2={50} stroke="#000" strokeWidth={1} />}
           {value.marks.map(renderMark)}
           {draftPreview}
         </svg>
@@ -345,7 +379,7 @@ export function MarkableDiagram({
           </button>
         )}
       </div>
-      {label && <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">{label}</span>}
+      {label && <span className="text-[10px] font-bold uppercase tracking-wide text-black/60 print:text-[6px]">{label}</span>}
     </div>
   );
 }

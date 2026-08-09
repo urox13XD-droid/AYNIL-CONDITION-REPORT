@@ -110,9 +110,9 @@ export function MonitoringReportView({
   const addItem = () => onItemsChange([...items, newMonitoringItem()]);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-6">
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-6 print:max-w-full print:gap-1.5 print:p-2">
       <HeaderFields kind="monitoring" header={header} onChange={onHeaderChange} />
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="report-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((it) => (
           <MonitoringItemCard
             key={it.id}

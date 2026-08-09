@@ -110,7 +110,10 @@ export function Toolbar({
           Export JSON
         </ComicButton>
         <ComicButton onClick={onPrint} className="shrink-0">
-          Imprimer / PDF
+          Imprimer
+        </ComicButton>
+        <ComicButton onClick={onPrint} className="shrink-0">
+          Export PDF
         </ComicButton>
         <ComicButton onClick={onSave} variant="solid" className="shrink-0">
           Sauvegarder

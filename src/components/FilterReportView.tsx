@@ -19,11 +19,18 @@ const CATEGORIES = [
   "Neutre 4x5.6",
   "Neutre 5x5",
   "Neutre 6x6",
+  "Dégradé Soft 5x5",
+  "Dégradé Hard 5x5",
+  "Dégradé Soft 6x6",
+  "Dégradé Hard 6x6",
+  "Dégradé Soft 4x5.6",
+  "Dégradé Hard 4x5.6",
   "Polaframe 6x6",
   "Polaframe 4x5.6",
   "Pola Ø138mm",
   "Pola Ø156mm",
   "Dioptrie",
+  "Dioptrie Split",
   "Autre",
 ] as const;
 
@@ -32,12 +39,29 @@ const DEFAULT_SHAPE: Record<string, FilterShape> = {
   "Neutre 4x5.6": "rect",
   "Neutre 5x5": "rect",
   "Neutre 6x6": "rect",
+  "Dégradé Soft 5x5": "rect",
+  "Dégradé Hard 5x5": "rect",
+  "Dégradé Soft 6x6": "rect",
+  "Dégradé Hard 6x6": "rect",
+  "Dégradé Soft 4x5.6": "rect",
+  "Dégradé Hard 4x5.6": "rect",
   "Polaframe 6x6": "rect",
   "Polaframe 4x5.6": "rect",
   "Pola Ø138mm": "circle",
   "Pola Ø156mm": "circle",
   Dioptrie: "circle",
+  "Dioptrie Split": "circle",
   Autre: "rect",
+};
+
+// graduated ND filters get a soft/hard gradient thumbnail instead of a plain box
+const GRADIENT_CATEGORY: Record<string, "soft" | "hard"> = {
+  "Dégradé Soft 5x5": "soft",
+  "Dégradé Hard 5x5": "hard",
+  "Dégradé Soft 6x6": "soft",
+  "Dégradé Hard 6x6": "hard",
+  "Dégradé Soft 4x5.6": "soft",
+  "Dégradé Hard 4x5.6": "hard",
 };
 
 // real reference art for the polarizer frames — same traced image reused for
@@ -63,23 +87,39 @@ const CATEGORY_DIMS: Record<string, { width: number; height: number }> = {
   "Neutre 4x5.6": landscapeDims(4, 5.65),
   "Neutre 5x5": squareDims(5),
   "Neutre 6x6": squareDims(6),
+  "Dégradé Soft 5x5": squareDims(5),
+  "Dégradé Hard 5x5": squareDims(5),
+  "Dégradé Soft 6x6": squareDims(6),
+  "Dégradé Hard 6x6": squareDims(6),
+  "Dégradé Soft 4x5.6": landscapeDims(4, 5.65),
+  "Dégradé Hard 4x5.6": landscapeDims(4, 5.65),
   // real traced-art aspect ratio (the plate itself is squarish regardless of the glass size it holds)
   "Polaframe 6x6": autoDims(1203 / 1308, 200),
   "Polaframe 4x5.6": autoDims(1, 200),
   "Pola Ø138mm": squareDims(138 / MM_PER_INCH),
   "Pola Ø156mm": squareDims(156 / MM_PER_INCH),
   Dioptrie: squareDims(4),
+  "Dioptrie Split": squareDims(4),
   Autre: squareDims(4.5),
 };
 
 const ND_GRADES = ["N 0.3", "N 0.6", "N 0.9", "N 1.2", "N 1.5", "N 1.8", "N 2.1", "N 2.4"];
+const DEG_GRADES = ["N 0.3", "N 0.6", "N 0.9"];
+const DIOPTRIE_VALUES = ["+1/2", "+1", "+2", "+3"];
 // categories with a fixed list of models — rendered as a dropdown (no free typing)
 const SELECT_MODELS: Record<string, string[]> = {
   "Neutre 4x4": ND_GRADES,
   "Neutre 4x5.6": ND_GRADES,
   "Neutre 5x5": ND_GRADES,
   "Neutre 6x6": ND_GRADES,
-  Dioptrie: ["+1/2", "+1", "+2", "+3"],
+  "Dégradé Soft 5x5": DEG_GRADES,
+  "Dégradé Hard 5x5": DEG_GRADES,
+  "Dégradé Soft 6x6": DEG_GRADES,
+  "Dégradé Hard 6x6": DEG_GRADES,
+  "Dégradé Soft 4x5.6": DEG_GRADES,
+  "Dégradé Hard 4x5.6": DEG_GRADES,
+  Dioptrie: DIOPTRIE_VALUES,
+  "Dioptrie Split": DIOPTRIE_VALUES,
 };
 // categories where the category name already fully describes the filter — no model field at all
 const NO_MODEL_CATEGORIES = new Set(["Polaframe 6x6", "Polaframe 4x5.6", "Pola Ø138mm", "Pola Ø156mm"]);
@@ -113,6 +153,8 @@ function FilterItemCard({
   const selectModels = SELECT_MODELS[item.category];
   const art = CATEGORY_ART[item.category];
   const dims = CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre;
+  const gradient = GRADIENT_CATEGORY[item.category];
+  const dividerLine = item.category === "Dioptrie Split";
 
   return (
     <ItemCardShell onRemove={onRemove} selected={selected} onToggleSelect={onToggleSelect}>
@@ -165,6 +207,8 @@ function FilterItemCard({
             dims={dims}
             frameless={!!art}
             backgroundSrc={art}
+            dividerLine={dividerLine}
+            gradient={gradient}
             value={item.front}
             onChange={(d) => onChange({ ...item, front: d })}
             tool={tool}
@@ -176,6 +220,8 @@ function FilterItemCard({
             frameless={!!art}
             backgroundSrc={art}
             imgFlip180={!!art}
+            dividerLine={dividerLine}
+            gradient={gradient}
             value={item.back}
             onChange={(d) => onChange({ ...item, back: d })}
             tool={tool}
@@ -204,12 +250,12 @@ export function FilterReportView({
   const addItem = () => onItemsChange([...items, newFilterItem()]);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-6">
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-6 print:max-w-full print:gap-1.5 print:p-2">
       <HeaderFields kind="filter" header={header} onChange={onHeaderChange} />
-      <p className="text-xs italic text-black/50">
+      <p className="no-print text-xs italic text-black/50">
         Choisissez un repère sur le bord du filtre (étiquette, encoche…) et dessinez-le afin de connaître son orientation.
       </p>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="report-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((it) => (
           <FilterItemCard
             key={it.id}
