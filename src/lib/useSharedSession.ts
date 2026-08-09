@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
-import { FilterItem, MonitoringItem, OpticalEntry, ReportHeader } from "./types";
+import { CameraItem, FilterItem, MonitoringItem, OpticalEntry, ReportHeader } from "./types";
 
 interface KindSlot<T> {
   session: { header: ReportHeader; items: T[] };
@@ -11,10 +11,17 @@ interface KindSlot<T> {
   setItems: (items: T[]) => void;
 }
 
+interface ReportSlice<T> {
+  header: ReportHeader;
+  items: T[];
+}
+
 interface SharedPayload {
-  optical: { header: ReportHeader; items: OpticalEntry[] };
-  filter: { header: ReportHeader; items: FilterItem[] };
-  monitoring: { header: ReportHeader; items: MonitoringItem[] };
+  optical: ReportSlice<OpticalEntry>;
+  filter: ReportSlice<FilterItem>;
+  monitoring: ReportSlice<MonitoringItem>;
+  /** optional — absent on sessions created before the camera report existed */
+  camera?: ReportSlice<CameraItem>;
 }
 
 export type SyncStatus = "offline" | "connecting" | "synced" | "error";
@@ -34,7 +41,8 @@ function slugify(name: string): string {
 export function useSharedSession(
   optical: KindSlot<OpticalEntry>,
   filter: KindSlot<FilterItem>,
-  monitoring: KindSlot<MonitoringItem>
+  monitoring: KindSlot<MonitoringItem>,
+  camera: KindSlot<CameraItem>
 ) {
   const [sessionName, setSessionName] = useState<string | null>(null);
   const [status, setStatus] = useState<SyncStatus>("offline");
@@ -42,6 +50,16 @@ export function useSharedSession(
 
   const lastSyncedJson = useRef<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+
+  const buildPayload = useCallback(
+    (): SharedPayload => ({
+      optical: { header: optical.session.header, items: optical.session.items },
+      filter: { header: filter.session.header, items: filter.session.items },
+      monitoring: { header: monitoring.session.header, items: monitoring.session.items },
+      camera: { header: camera.session.header, items: camera.session.items },
+    }),
+    [optical, filter, monitoring, camera]
+  );
 
   const applyRemote = useCallback(
     (payload: SharedPayload) => {
@@ -51,8 +69,12 @@ export function useSharedSession(
       filter.setItems(payload.filter.items);
       monitoring.setHeader(payload.monitoring.header);
       monitoring.setItems(payload.monitoring.items);
+      if (payload.camera) {
+        camera.setHeader(payload.camera.header);
+        camera.setItems(payload.camera.items);
+      }
     },
-    [optical, filter, monitoring]
+    [optical, filter, monitoring, camera]
   );
 
   const leave = useCallback(() => {
@@ -97,11 +119,7 @@ export function useSharedSession(
           lastSyncedJson.current = JSON.stringify(payload);
           applyRemote(payload);
         } else {
-          const payload: SharedPayload = {
-            optical: { header: optical.session.header, items: optical.session.items },
-            filter: { header: filter.session.header, items: filter.session.items },
-            monitoring: { header: monitoring.session.header, items: monitoring.session.items },
-          };
+          const payload = buildPayload();
           const { error: insertError } = await supabase.from("condition_sessions").insert({ id, data: payload });
           if (insertError) {
             setError(insertError.message);
@@ -134,18 +152,14 @@ export function useSharedSession(
         setStatus("error");
       }
     },
-    [applyRemote, optical, filter, monitoring]
+    [applyRemote, buildPayload]
   );
 
   // debounced push whenever local state drifts from what's on the server
   useEffect(() => {
     const client = supabase;
     if (!sessionName || !client) return;
-    const payload: SharedPayload = {
-      optical: { header: optical.session.header, items: optical.session.items },
-      filter: { header: filter.session.header, items: filter.session.items },
-      monitoring: { header: monitoring.session.header, items: monitoring.session.items },
-    };
+    const payload = buildPayload();
     const json = JSON.stringify(payload);
     if (json === lastSyncedJson.current) return;
 
@@ -162,7 +176,8 @@ export function useSharedSession(
     }, PUSH_DEBOUNCE_MS);
 
     return () => clearTimeout(t);
-  }, [sessionName, optical.session, filter.session, monitoring.session]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- buildPayload depends on the kind slots, which already gate this effect via .session
+  }, [sessionName, optical.session, filter.session, monitoring.session, camera.session]);
 
   // leave the channel behind on unmount
   useEffect(() => () => {

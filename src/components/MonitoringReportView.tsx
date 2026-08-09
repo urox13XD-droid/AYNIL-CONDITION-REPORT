@@ -42,7 +42,7 @@ function MonitoringItemCard({
   selected: boolean;
   onToggleSelect: () => void;
 }) {
-  const [tool, setTool] = useState<ActiveTool>("scratch");
+  const [tool, setTool] = useState<ActiveTool>("pen");
   const device = item.deviceId ? getMonitorById(item.deviceId) : undefined;
 
   return (

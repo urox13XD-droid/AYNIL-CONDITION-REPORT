@@ -99,7 +99,7 @@ function OpticalItemCard({
   selected: boolean;
   onToggleSelect: () => void;
 }) {
-  const [tool, setTool] = useState<ActiveTool>("scratch");
+  const [tool, setTool] = useState<ActiveTool>("pen");
 
   return (
     <ItemCardShell
