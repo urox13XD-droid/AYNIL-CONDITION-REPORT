@@ -10,7 +10,7 @@ export function UndoRedoDock({
   onRedo: () => void;
 }) {
   return (
-    <div className="no-print fixed bottom-5 right-5 z-30 flex items-center gap-2">
+    <div className="no-print flex items-center gap-2">
       <button
         type="button"
         onClick={onUndo}

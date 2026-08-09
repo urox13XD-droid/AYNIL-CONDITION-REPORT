@@ -103,12 +103,14 @@ export default function Home() {
             onItemsChange={monitoring.setItems}
           />
         )}
-        <div className="no-print pointer-events-none fixed bottom-16 right-4 z-10 hidden items-center gap-1.5 opacity-60 sm:flex">
+      </main>
+      <div className="no-print fixed bottom-5 right-5 z-30 flex items-center gap-3">
+        <UndoRedoDock canUndo={active.canUndo} canRedo={active.canRedo} onUndo={active.undo} onRedo={active.redo} />
+        <div className="pointer-events-none hidden items-center gap-1.5 opacity-60 sm:flex">
           <span className="text-[10px] font-semibold text-black">Powered by</span>
           <NextImage src="/logo-transpa.png" alt="Transpa" width={887} height={132} className="h-3 w-auto" />
         </div>
-      </main>
-      <UndoRedoDock canUndo={active.canUndo} canRedo={active.canRedo} onUndo={active.undo} onRedo={active.redo} />
+      </div>
       {toast && (
         <div className="no-print fixed bottom-5 left-1/2 -translate-x-1/2 rounded-lg border-[2.5px] border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-wide text-white shadow-comic">
           {toast}

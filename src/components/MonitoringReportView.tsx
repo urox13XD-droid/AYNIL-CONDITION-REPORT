@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import { AddItemTile } from "@/components/AddItemTile";
+import { ComboOption, DeviceNameField } from "@/components/DeviceNameField";
 import { HeaderFields } from "@/components/HeaderFields";
 import { ItemCardShell } from "@/components/ItemCardShell";
-import { ActiveTool, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
+import { ActiveTool, autoDims, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
 import { useItemSelection } from "@/lib/useItemSelection";
+import { findMonitorByName, getMonitorById, MONITOR_CATALOG } from "@/lib/monitorCatalog";
 import { emptyDiagram, MonitoringItem, newId, ProtectionState, ReportHeader } from "@/lib/types";
+
+const MONITOR_OPTIONS: ComboOption[] = MONITOR_CATALOG.map((d) => ({ id: d.id, name: d.name }));
 
 const PROTECTION_OPTIONS: { value: ProtectionState; label: string }[] = [
   { value: "", label: "—" },
@@ -39,11 +43,19 @@ function MonitoringItemCard({
   onToggleSelect: () => void;
 }) {
   const [tool, setTool] = useState<ActiveTool>("scratch");
+  const device = item.deviceId ? getMonitorById(item.deviceId) : undefined;
 
   return (
     <ItemCardShell onRemove={onRemove} selected={selected} onToggleSelect={onToggleSelect}>
       <div className="flex flex-col gap-3">
-        <TextField label="Écran" value={item.name} onChange={(v) => onChange({ ...item, name: v })} placeholder="Ex. SmallHD Cine 7" />
+        <DeviceNameField
+          label="Écran"
+          value={item.name}
+          onChange={(v) => onChange({ ...item, name: v, deviceId: findMonitorByName(v)?.id })}
+          onPick={(o) => onChange({ ...item, name: o.name, deviceId: o.id })}
+          options={MONITOR_OPTIONS}
+          placeholder="Ex. SmallHD Cine 7"
+        />
         <TextField label="N° série (#)" value={item.serial} onChange={(v) => onChange({ ...item, serial: v })} mono />
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Vitre de protection</span>
@@ -62,7 +74,19 @@ function MonitoringItemCard({
         <NotesField value={item.notes} onChange={(v) => onChange({ ...item, notes: v })} />
         <MarkToolPalette tool={tool} onToolChange={setTool} />
         <div className="flex items-center justify-center pt-1">
-          <MarkableDiagram shape="rect" size="screen" value={item.screen} onChange={(d) => onChange({ ...item, screen: d })} tool={tool} />
+          {device?.iconUrl ? (
+            <MarkableDiagram
+              shape="rect"
+              dims={autoDims(device.iconAspect ?? 1.6, 200)}
+              frameless
+              backgroundSrc={device.iconUrl}
+              value={item.screen}
+              onChange={(d) => onChange({ ...item, screen: d })}
+              tool={tool}
+            />
+          ) : (
+            <MarkableDiagram shape="rect" size="screen" value={item.screen} onChange={(d) => onChange({ ...item, screen: d })} tool={tool} />
+          )}
         </div>
       </div>
     </ItemCardShell>
