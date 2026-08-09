@@ -5,7 +5,7 @@ import { AddItemTile } from "@/components/AddItemTile";
 import { ComicButton } from "@/components/ComicButton";
 import { HeaderFields } from "@/components/HeaderFields";
 import { ItemCardShell } from "@/components/ItemCardShell";
-import { ActiveTool, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
+import { ActiveTool, autoDims, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
 import { useItemSelection } from "@/lib/useItemSelection";
@@ -28,6 +28,10 @@ export function newOpticalItem(): OpticalItem {
 export function newOpticalGroup(): OpticalGroupMarker {
   return { id: newId("grp"), entryKind: "group", label: "" };
 }
+
+// the traced lens-body art (public/lens-body.png), rotated so the mount faces
+// down — real aspect ratio, sized to sit comfortably next to the Av./Ar. circles
+const LENS_BODY_DIMS = autoDims(983 / 1600, 180);
 
 function cloneOpticalEntry(entry: OpticalEntry): OpticalEntry {
   if (entry.entryKind === "group") return { ...entry, id: newId("grp") };
@@ -109,7 +113,7 @@ function OpticalItemCard({
         <TextField label="N° série (#)" value={item.serial} onChange={(v) => onChange({ ...item, serial: v })} mono />
         <NotesField value={item.notes} onChange={(v) => onChange({ ...item, notes: v })} />
         <MarkToolPalette tool={tool} onToolChange={setTool} />
-        <div className="flex items-end justify-center gap-3 pt-1">
+        <div className="flex flex-wrap items-end justify-center gap-3 pt-1">
           <MarkableDiagram
             shape="circle"
             value={item.front}
@@ -125,20 +129,19 @@ function OpticalItemCard({
             label="Ar."
             size="sm"
           />
-        </div>
-        {item.bodyOpen && (
-          <div className="flex flex-col items-center gap-1 border-t-[1.5px] border-black/10 pt-3">
+          {item.bodyOpen && (
             <MarkableDiagram
               shape="rect"
-              size="body"
+              dims={LENS_BODY_DIMS}
+              frameless
               backgroundSrc="/lens-body.png"
               value={item.body}
               onChange={(d) => onChange({ ...item, body: d })}
               tool={tool}
               label="Carrosserie"
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </ItemCardShell>
   );
@@ -183,14 +186,15 @@ export function OpticalReportView({
           entry.entryKind === "group" ? (
             <GroupBanner key={entry.id} group={entry} onChange={(g) => updateEntry(entry.id, g)} onRemove={() => removeEntry(entry.id)} />
           ) : (
-            <OpticalItemCard
-              key={entry.id}
-              item={entry}
-              onChange={(next) => updateEntry(entry.id, next)}
-              onRemove={() => removeEntry(entry.id)}
-              selected={selection.selected.has(entry.id)}
-              onToggleSelect={() => selection.toggle(entry.id)}
-            />
+            <div key={entry.id} className={entry.bodyOpen ? "sm:col-span-2" : undefined}>
+              <OpticalItemCard
+                item={entry}
+                onChange={(next) => updateEntry(entry.id, next)}
+                onRemove={() => removeEntry(entry.id)}
+                selected={selection.selected.has(entry.id)}
+                onToggleSelect={() => selection.toggle(entry.id)}
+              />
+            </div>
           )
         )}
         <AddItemTile onAdd={addItem} label="Ajouter une optique" />

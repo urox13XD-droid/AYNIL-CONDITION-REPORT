@@ -65,6 +65,8 @@ export type ProtectionState = "" | "aucune" | "neuve" | "usagee";
 export interface MonitoringItem {
   id: string;
   name: string;
+  /** MONITOR_CATALOG id, set when `name` matches a known screen — drives the traced reference art */
+  deviceId?: string;
   serial: string;
   protection: ProtectionState;
   notes: string;

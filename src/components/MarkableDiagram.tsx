@@ -105,8 +105,12 @@ const SIZE_CLASSES: Record<string, string> = {
   "rect-md": "h-28 w-36 rounded-md sm:h-32 sm:w-40",
   "rect-sm": "h-20 w-28 rounded-md sm:h-24 sm:w-32",
   "rect-screen": "h-28 w-48 rounded-md sm:h-32 sm:w-56",
-  "rect-body": "h-64 w-40 rounded-md sm:h-72 sm:w-44",
 };
+
+/** width/height (px) for a traced reference image of a given aspect ratio, capped to `target` on its longer side */
+export function autoDims(aspect: number, target = 176): { width: number; height: number } {
+  return aspect >= 1 ? { width: target, height: target / aspect } : { width: target * aspect, height: target };
+}
 
 export function MarkableDiagram({
   shape,
@@ -117,6 +121,8 @@ export function MarkableDiagram({
   shade = false,
   size = "md",
   backgroundSrc,
+  dims,
+  frameless = false,
 }: {
   shape: "circle" | "rect";
   value: DiagramState;
@@ -125,10 +131,14 @@ export function MarkableDiagram({
   label?: string;
   /** light gray fill, used for the polarizer "côté caméra/comédien" backing in the paper form */
   shade?: boolean;
-  /** "sm" reads smaller (rear lens element) · "screen" is a wide monitor aspect · "body" is a tall lens-barrel aspect */
-  size?: "md" | "sm" | "screen" | "body";
-  /** a traced reference drawing (e.g. a lens barrel) shown behind the mark overlay */
+  /** "sm" reads smaller (rear lens element) · "screen" is a wide monitor aspect */
+  size?: "md" | "sm" | "screen";
+  /** a traced reference drawing (e.g. a lens barrel, a real screen) shown behind the mark overlay */
   backgroundSrc?: string;
+  /** explicit px size, overrides `size` — used for real-aspect reference art and the filter size scale */
+  dims?: { width: number; height: number };
+  /** no border/background chrome — just the reference art (or nothing) with marks drawn straight on top */
+  frameless?: boolean;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<MarkPoint[] | null>(null);
@@ -277,13 +287,18 @@ export function MarkableDiagram({
     return null;
   })();
 
-  const sizeClass = SIZE_CLASSES[`${shape}-${size}`] ?? SIZE_CLASSES[`${shape}-md`];
+  const sizeClass = dims ? "" : (SIZE_CLASSES[`${shape}-${size}`] ?? SIZE_CLASSES[`${shape}-md`]);
+  const roundedClass = dims ? (shape === "circle" ? "rounded-full" : "rounded-md") : "";
+  const chromeClass = frameless ? "" : `border-[2.5px] border-black bg-white ${roundedClass}`;
 
   return (
     <div className="flex flex-col items-center gap-1">
       <div
-        className={`relative overflow-hidden border-[2.5px] border-black bg-white ${sizeClass}`}
-        style={shade ? { backgroundColor: "#e5e5e5" } : undefined}
+        className={`relative overflow-hidden ${chromeClass} ${sizeClass}`}
+        style={{
+          ...(dims ? { width: dims.width, height: dims.height } : undefined),
+          ...(shade ? { backgroundColor: "#e5e5e5" } : undefined),
+        }}
       >
         {backgroundSrc && (
           // eslint-disable-next-line @next/next/no-img-element -- traced reference art, not an optimizable content image

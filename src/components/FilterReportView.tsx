@@ -14,19 +14,41 @@ function cloneFilterItem(item: FilterItem): FilterItem {
   return { ...item, id: newId("flt"), front: { marks: [...item.front.marks] }, back: { marks: [...item.back.marks] } };
 }
 
-const CATEGORIES = ["Neutre carré 4x5.6/4x4", "Neutre carré 6x6", "Polarisant", "Dioptrie", "Autre"] as const;
+const CATEGORIES = ["Neutre 4x4", "Neutre 4x5.6", "Neutre 5x5", "Neutre 6x6", "Polarisant", "Dioptrie", "Autre"] as const;
 
 const DEFAULT_SHAPE: Record<string, FilterShape> = {
-  "Neutre carré 4x5.6/4x4": "rect",
-  "Neutre carré 6x6": "rect",
+  "Neutre 4x4": "rect",
+  "Neutre 4x5.6": "rect",
+  "Neutre 5x5": "rect",
+  "Neutre 6x6": "rect",
   Polarisant: "circle",
   Dioptrie: "circle",
   Autre: "rect",
 };
 
+// px-per-inch scale, so a 6x6 filter reads visibly bigger than a 4x4 one and
+// a 4x5.6 reads as a portrait rectangle rather than a square
+const FILTER_UNIT_PX = 18;
+function squareDims(inches: number) {
+  const s = inches * FILTER_UNIT_PX;
+  return { width: s, height: s };
+}
+const CATEGORY_DIMS: Record<string, { width: number; height: number }> = {
+  "Neutre 4x4": squareDims(4),
+  "Neutre 4x5.6": { width: 4 * FILTER_UNIT_PX, height: 5.65 * FILTER_UNIT_PX },
+  "Neutre 5x5": squareDims(5),
+  "Neutre 6x6": squareDims(6),
+  Polarisant: squareDims(4.5),
+  Dioptrie: squareDims(4),
+  Autre: squareDims(4.5),
+};
+
+const ND_GRADES = ["N 0.3", "N 0.6", "N 0.9", "N 1.2", "N 1.5", "N 1.8", "N 2.1"];
 const MODEL_SUGGESTIONS: Record<string, string[]> = {
-  "Neutre carré 4x5.6/4x4": ["N 0.3", "N 0.6", "N 0.9", "N 1.2", "N 1.5", "N 1.8", "N 2.1"],
-  "Neutre carré 6x6": ["N 0.3", "N 0.6", "N 0.9", "N 1.2", "N 1.5", "N 1.8", "N 2.1"],
+  "Neutre 4x4": ND_GRADES,
+  "Neutre 4x5.6": ND_GRADES,
+  "Neutre 5x5": ND_GRADES,
+  "Neutre 6x6": ND_GRADES,
   Polarisant: ["Polaframe", "Pola Ø 4.5", "Pola Ø 6.6", "Pola"],
   Dioptrie: ["+1/2", "+1", "+2", "+3"],
   Autre: [],
@@ -146,6 +168,7 @@ function FilterItemCard({
         <div className="flex items-end justify-center gap-3 pt-1">
           <MarkableDiagram
             shape={item.shape}
+            dims={CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre}
             value={item.front}
             onChange={(d) => onChange({ ...item, front: d })}
             tool={tool}
@@ -154,6 +177,7 @@ function FilterItemCard({
           />
           <MarkableDiagram
             shape={item.shape}
+            dims={CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre}
             value={item.back}
             onChange={(d) => onChange({ ...item, back: d })}
             tool={tool}
