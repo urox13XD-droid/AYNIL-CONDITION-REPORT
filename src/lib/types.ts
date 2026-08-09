@@ -24,12 +24,13 @@ export function emptyDiagram(): DiagramState {
 }
 
 export type FilterShape = "rect" | "circle";
-export type FilterPairLabels = "av-ar" | "camera-comedien";
 
 export interface OpticalItem {
   id: string;
-  entryKind: "item";
   name: string;
+  /** when on, `name` holds just the focal length and `seriesLabel` (e.g. "Cooke S4") is shown as a banner above it */
+  seriesOn: boolean;
+  seriesLabel: string;
   serial: string;
   notes: string;
   front: DiagramState;
@@ -39,23 +40,14 @@ export interface OpticalItem {
   bodyOpen: boolean;
 }
 
-/** a full-width, removable banner used to bundle several lenses of the same series (e.g. a Cooke S4 set) without retyping the series name on every card */
-export interface OpticalGroupMarker {
-  id: string;
-  entryKind: "group";
-  label: string;
-}
-
-export type OpticalEntry = OpticalItem | OpticalGroupMarker;
+export type OpticalEntry = OpticalItem;
 
 export interface FilterItem {
   id: string;
   category: string;
   model: string;
-  serial: string;
   notes: string;
   shape: FilterShape;
-  pairLabels: FilterPairLabels;
   front: DiagramState;
   back: DiagramState;
 }

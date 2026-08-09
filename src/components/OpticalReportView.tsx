@@ -2,20 +2,20 @@
 
 import { useState } from "react";
 import { AddItemTile } from "@/components/AddItemTile";
-import { ComicButton } from "@/components/ComicButton";
 import { HeaderFields } from "@/components/HeaderFields";
 import { ItemCardShell } from "@/components/ItemCardShell";
 import { ActiveTool, autoDims, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
 import { useItemSelection } from "@/lib/useItemSelection";
-import { emptyDiagram, newId, OpticalEntry, OpticalGroupMarker, OpticalItem, ReportHeader } from "@/lib/types";
+import { emptyDiagram, newId, OpticalEntry, OpticalItem, ReportHeader } from "@/lib/types";
 
 export function newOpticalItem(): OpticalItem {
   return {
     id: newId("opt"),
-    entryKind: "item",
     name: "",
+    seriesOn: false,
+    seriesLabel: "",
     serial: "",
     notes: "",
     front: emptyDiagram(),
@@ -25,16 +25,11 @@ export function newOpticalItem(): OpticalItem {
   };
 }
 
-export function newOpticalGroup(): OpticalGroupMarker {
-  return { id: newId("grp"), entryKind: "group", label: "" };
-}
-
 // the traced lens-body art (public/lens-body.png), rotated so the mount faces
 // down — real aspect ratio, sized to sit comfortably next to the Av./Ar. circles
 const LENS_BODY_DIMS = autoDims(983 / 1600, 180);
 
 function cloneOpticalEntry(entry: OpticalEntry): OpticalEntry {
-  if (entry.entryKind === "group") return { ...entry, id: newId("grp") };
   return {
     ...entry,
     id: newId("opt"),
@@ -61,28 +56,20 @@ function BodyNotchButton({ open, onToggle }: { open: boolean; onToggle: () => vo
   );
 }
 
-function GroupBanner({
-  group,
-  onChange,
-  onRemove,
-}: {
-  group: OpticalGroupMarker;
-  onChange: (g: OpticalGroupMarker) => void;
-  onRemove: () => void;
-}) {
+function SeriesNotchButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
-    <div className="col-span-full flex items-center gap-2 rounded-lg border-[2.5px] border-black bg-black px-4 py-2 text-white shadow-comic-sm">
-      <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-white/60">Série</span>
-      <input
-        value={group.label}
-        onChange={(e) => onChange({ ...group, label: e.target.value })}
-        placeholder="Ex. Cooke S4"
-        className="font-display min-w-0 flex-1 bg-transparent text-lg uppercase tracking-wide outline-none placeholder:text-white/40"
-      />
-      <button type="button" onClick={onRemove} title="Retirer ce repère" className="no-print shrink-0 text-xs font-bold opacity-70 hover:opacity-100">
-        ✕
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={onToggle}
+      title={open ? "Retirer de la série" : "Fait partie d'une série (ex. Cooke S4)"}
+      className={`no-print absolute -right-2.5 top-7 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-black text-[11px] font-bold shadow-comic-sm ${
+        open ? "bg-black text-white" : "bg-white text-black hover:bg-black/10"
+      }`}
+    >
+      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+        <path d="M4 7h16M4 12h16M4 17h10" />
+      </svg>
+    </button>
   );
 }
 
@@ -106,10 +93,31 @@ function OpticalItemCard({
       onRemove={onRemove}
       selected={selected}
       onToggleSelect={onToggleSelect}
-      cornerNotch={<BodyNotchButton open={item.bodyOpen} onToggle={() => onChange({ ...item, bodyOpen: !item.bodyOpen })} />}
+      cornerNotch={
+        <>
+          <SeriesNotchButton open={item.seriesOn} onToggle={() => onChange({ ...item, seriesOn: !item.seriesOn })} />
+          <BodyNotchButton open={item.bodyOpen} onToggle={() => onChange({ ...item, bodyOpen: !item.bodyOpen })} />
+        </>
+      }
     >
       <div className="flex flex-col gap-3">
-        <TextField label="Optique" value={item.name} onChange={(v) => onChange({ ...item, name: v })} placeholder="Ex. Cooke S4 35mm" />
+        {item.seriesOn && (
+          <div className="flex items-center gap-2 rounded-md border-[2px] border-black bg-black px-2.5 py-1 text-white">
+            <span className="shrink-0 text-[9px] font-bold uppercase tracking-widest text-white/60">Série</span>
+            <input
+              value={item.seriesLabel}
+              onChange={(e) => onChange({ ...item, seriesLabel: e.target.value })}
+              placeholder="Ex. Cooke S4"
+              className="font-display min-w-0 flex-1 bg-transparent text-sm uppercase tracking-wide outline-none placeholder:text-white/40"
+            />
+          </div>
+        )}
+        <TextField
+          label={item.seriesOn ? "Focale" : "Optique"}
+          value={item.name}
+          onChange={(v) => onChange({ ...item, name: v })}
+          placeholder={item.seriesOn ? "Ex. 35mm" : "Ex. Cooke S4 35mm"}
+        />
         <TextField label="N° série (#)" value={item.serial} onChange={(v) => onChange({ ...item, serial: v })} mono />
         <NotesField value={item.notes} onChange={(v) => onChange({ ...item, notes: v })} />
         <MarkToolPalette tool={tool} onToolChange={setTool} />
@@ -163,40 +171,26 @@ export function OpticalReportView({
   const updateEntry = (id: string, next: OpticalEntry) => onItemsChange(items.map((e) => (e.id === id ? next : e)));
   const removeEntry = (id: string) => onItemsChange(items.filter((e) => e.id !== id));
   const addItem = () => onItemsChange([...items, newOpticalItem()]);
-  const addGroup = () => onItemsChange([...items, newOpticalGroup()]);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-6">
       <HeaderFields kind="optical" header={header} onChange={onHeaderChange} />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs italic text-black/50">
-          NB : pour repérer l&apos;orientation de l&apos;optique, marquez un point sur la monture à droite pour la face
-          avant, à gauche pour la face arrière.
-        </p>
-        <ComicButton
-          onClick={addGroup}
-          title="Regrouper les optiques suivantes sous un repère de série (ex. Cooke S4)"
-          className="no-print"
-        >
-          + Repère de série
-        </ComicButton>
-      </div>
+      <p className="text-xs italic text-black/50">
+        NB : pour repérer l&apos;orientation de l&apos;optique, marquez un point sur la monture à droite pour la face
+        avant, à gauche pour la face arrière. Le petit bouton en haut à droite de chaque optique permet de
+        l&apos;associer à une série (ex. Cooke S4) — le champ principal ne contient alors que la focale.
+      </p>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {items.map((entry) =>
-          entry.entryKind === "group" ? (
-            <GroupBanner key={entry.id} group={entry} onChange={(g) => updateEntry(entry.id, g)} onRemove={() => removeEntry(entry.id)} />
-          ) : (
-            <div key={entry.id} className={entry.bodyOpen ? "sm:col-span-2" : undefined}>
-              <OpticalItemCard
-                item={entry}
-                onChange={(next) => updateEntry(entry.id, next)}
-                onRemove={() => removeEntry(entry.id)}
-                selected={selection.selected.has(entry.id)}
-                onToggleSelect={() => selection.toggle(entry.id)}
-              />
-            </div>
-          )
-        )}
+        {items.map((entry) => (
+          <OpticalItemCard
+            key={entry.id}
+            item={entry}
+            onChange={(next) => updateEntry(entry.id, next)}
+            onRemove={() => removeEntry(entry.id)}
+            selected={selection.selected.has(entry.id)}
+            onToggleSelect={() => selection.toggle(entry.id)}
+          />
+        ))}
         <AddItemTile onAdd={addItem} label="Ajouter une optique" />
       </div>
       <SelectionActionBar
