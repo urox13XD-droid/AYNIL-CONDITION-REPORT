@@ -1,0 +1,44 @@
+export function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  mono = false,
+  listId,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  mono?: boolean;
+  listId?: string;
+}) {
+  return (
+    <label className="flex flex-col gap-0.5">
+      <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        list={listId}
+        className={`rounded-md border-[1.5px] border-black/40 px-2 py-1 text-sm font-semibold outline-none focus:border-black ${
+          mono ? "font-mono" : ""
+        }`}
+      />
+    </label>
+  );
+}
+
+export function NotesField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="flex flex-1 flex-col gap-0.5">
+      <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Notes</span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={2}
+        className="min-h-[3.5rem] flex-1 resize-none rounded-md border-[1.5px] border-black/40 px-2 py-1 text-sm font-semibold outline-none focus:border-black"
+      />
+    </label>
+  );
+}

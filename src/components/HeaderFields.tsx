@@ -1,0 +1,59 @@
+import { Logo } from "@/components/Logo";
+import { ReportHeader, ReportKind, REPORT_TITLES } from "@/lib/types";
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold">
+      <span className="shrink-0 text-black/70">{label} :</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="min-w-0 flex-1 rounded-md border-b-2 border-black bg-transparent px-1 py-0.5 outline-none focus:bg-black/5"
+      />
+    </label>
+  );
+}
+
+export function HeaderFields({
+  kind,
+  header,
+  onChange,
+}: {
+  kind: ReportKind;
+  header: ReportHeader;
+  onChange: (h: ReportHeader) => void;
+}) {
+  const set = (patch: Partial<ReportHeader>) => onChange({ ...header, ...patch });
+
+  return (
+    <div className="flex flex-col gap-3 border-b-[2.5px] border-black pb-4">
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="font-display text-2xl uppercase tracking-wide sm:text-3xl">{REPORT_TITLES[kind]} *</h1>
+        <Logo />
+      </div>
+      <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
+        <Field label="Date" value={header.date} onChange={(v) => set({ date: v })} placeholder="jj/mm/aaaa" />
+        <Field label="Prod" value={header.prod} onChange={(v) => set({ prod: v })} />
+        <Field label="Loueur" value={header.loueur} onChange={(v) => set({ loueur: v })} />
+        <Field label="Film" value={header.film} onChange={(v) => set({ film: v })} />
+        <Field
+          label="Assistant·e / Tel."
+          value={header.assistant}
+          onChange={(v) => set({ assistant: v })}
+        />
+      </div>
+      <p className="text-[11px] italic text-black/50">* Remettre une copie (papier ou PDF) au loueur avant le départ</p>
+    </div>
+  );
+}
