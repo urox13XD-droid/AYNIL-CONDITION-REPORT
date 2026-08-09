@@ -129,6 +129,7 @@ export function MarkableDiagram({
   backgroundSrc,
   dims,
   frameless = false,
+  imgFlip180 = false,
 }: {
   shape: "circle" | "rect";
   value: DiagramState;
@@ -145,6 +146,8 @@ export function MarkableDiagram({
   dims?: { width: number; height: number };
   /** no border/background chrome — just the reference art (or nothing) with marks drawn straight on top */
   frameless?: boolean;
+  /** rotate `backgroundSrc` 180° — used to reuse one traced image for both the front and back side */
+  imgFlip180?: boolean;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<MarkPoint[] | null>(null);
@@ -313,7 +316,7 @@ export function MarkableDiagram({
             src={backgroundSrc}
             alt=""
             draggable={false}
-            className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
+            className={`pointer-events-none absolute inset-0 h-full w-full select-none object-contain ${imgFlip180 ? "rotate-180" : ""}`}
           />
         )}
         <svg
@@ -336,7 +339,7 @@ export function MarkableDiagram({
             type="button"
             onClick={clearAll}
             title="Vider ce schéma"
-            className="no-print absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] border-black bg-white text-[10px] font-bold shadow-comic-sm hover:bg-black hover:text-white"
+            className="no-print absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] border-black bg-white text-[10px] font-bold shadow-comic-sm hover:bg-black hover:text-white"
           >
             ✕
           </button>

@@ -8,89 +8,91 @@ import { ActiveTool, MarkableDiagram, MarkToolPalette } from "@/components/Marka
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
 import { useItemSelection } from "@/lib/useItemSelection";
-import { emptyDiagram, FilterItem, FilterPairLabels, FilterShape, newId, ReportHeader } from "@/lib/types";
+import { emptyDiagram, FilterItem, FilterShape, newId, ReportHeader } from "@/lib/types";
 
 function cloneFilterItem(item: FilterItem): FilterItem {
   return { ...item, id: newId("flt"), front: { marks: [...item.front.marks] }, back: { marks: [...item.back.marks] } };
 }
 
-const CATEGORIES = ["Neutre 4x4", "Neutre 4x5.6", "Neutre 5x5", "Neutre 6x6", "Polarisant", "Dioptrie", "Autre"] as const;
+const CATEGORIES = [
+  "Neutre 4x4",
+  "Neutre 4x5.6",
+  "Neutre 5x5",
+  "Neutre 6x6",
+  "Polaframe 6x6",
+  "Polaframe 4x5.6",
+  "Pola Ø138mm",
+  "Pola Ø156mm",
+  "Dioptrie",
+  "Autre",
+] as const;
 
 const DEFAULT_SHAPE: Record<string, FilterShape> = {
   "Neutre 4x4": "rect",
   "Neutre 4x5.6": "rect",
   "Neutre 5x5": "rect",
   "Neutre 6x6": "rect",
-  Polarisant: "circle",
+  "Polaframe 6x6": "rect",
+  "Polaframe 4x5.6": "rect",
+  "Pola Ø138mm": "circle",
+  "Pola Ø156mm": "circle",
   Dioptrie: "circle",
   Autre: "rect",
 };
 
+// real reference art for the polarizer frames — same traced image reused for
+// the back side, just flipped 180° (see imgFlip180 below)
+const CATEGORY_ART: Record<string, string> = {
+  "Polaframe 6x6": "/polaframe-6x6.png",
+  "Polaframe 4x5.6": "/polaframe-4x5.6.png",
+};
+
 // px-per-inch scale, so a 6x6 filter reads visibly bigger than a 4x4 one and
-// a 4x5.6 reads as a portrait rectangle rather than a square
-const FILTER_UNIT_PX = 18;
+// a 4x5.6 reads as a landscape rectangle rather than a square
+const FILTER_UNIT_PX = 22;
 function squareDims(inches: number) {
   const s = inches * FILTER_UNIT_PX;
   return { width: s, height: s };
 }
+function landscapeDims(shortInches: number, longInches: number) {
+  return { width: longInches * FILTER_UNIT_PX, height: shortInches * FILTER_UNIT_PX };
+}
+const MM_PER_INCH = 25.4;
 const CATEGORY_DIMS: Record<string, { width: number; height: number }> = {
   "Neutre 4x4": squareDims(4),
-  "Neutre 4x5.6": { width: 4 * FILTER_UNIT_PX, height: 5.65 * FILTER_UNIT_PX },
+  "Neutre 4x5.6": landscapeDims(4, 5.65),
   "Neutre 5x5": squareDims(5),
   "Neutre 6x6": squareDims(6),
-  Polarisant: squareDims(4.5),
+  "Polaframe 6x6": squareDims(6),
+  "Polaframe 4x5.6": landscapeDims(4, 5.65),
+  "Pola Ø138mm": squareDims(138 / MM_PER_INCH),
+  "Pola Ø156mm": squareDims(156 / MM_PER_INCH),
   Dioptrie: squareDims(4),
   Autre: squareDims(4.5),
 };
 
-const ND_GRADES = ["N 0.3", "N 0.6", "N 0.9", "N 1.2", "N 1.5", "N 1.8", "N 2.1"];
-const MODEL_SUGGESTIONS: Record<string, string[]> = {
+const ND_GRADES = ["N 0.3", "N 0.6", "N 0.9", "N 1.2", "N 1.5", "N 1.8", "N 2.1", "N 2.4"];
+// categories with a fixed list of models — rendered as a dropdown (no free typing)
+const SELECT_MODELS: Record<string, string[]> = {
   "Neutre 4x4": ND_GRADES,
   "Neutre 4x5.6": ND_GRADES,
   "Neutre 5x5": ND_GRADES,
   "Neutre 6x6": ND_GRADES,
-  Polarisant: ["Polaframe", "Pola Ø 4.5", "Pola Ø 6.6", "Pola"],
   Dioptrie: ["+1/2", "+1", "+2", "+3"],
-  Autre: [],
 };
+// categories where the category name already fully describes the filter — no model field at all
+const NO_MODEL_CATEGORIES = new Set(["Polaframe 6x6", "Polaframe 4x5.6", "Pola Ø138mm", "Pola Ø156mm"]);
 
 export function newFilterItem(): FilterItem {
   return {
     id: newId("flt"),
     category: CATEGORIES[0],
     model: "",
-    serial: "",
     notes: "",
     shape: "rect",
-    pairLabels: "av-ar",
     front: emptyDiagram(),
     back: emptyDiagram(),
   };
-}
-
-function SegmentedToggle<T extends string>({
-  value,
-  options,
-  onChange,
-}: {
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="inline-flex overflow-hidden rounded-md border-[1.5px] border-black text-[10px] font-bold uppercase">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          onClick={() => onChange(o.value)}
-          className={`px-2 py-1 transition ${value === o.value ? "bg-black text-white" : "bg-white text-black hover:bg-black/10"}`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 function FilterItemCard({
@@ -107,8 +109,9 @@ function FilterItemCard({
   onToggleSelect: () => void;
 }) {
   const [tool, setTool] = useState<ActiveTool>("pen");
-  const datalistId = `models-${item.id}`;
-  const pairLabelText = item.pairLabels === "av-ar" ? ["Av.", "Ar."] : ["Côté caméra", "Côté comédien"];
+  const selectModels = SELECT_MODELS[item.category];
+  const art = CATEGORY_ART[item.category];
+  const dims = CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre;
 
   return (
     <ItemCardShell onRemove={onRemove} selected={selected} onToggleSelect={onToggleSelect}>
@@ -119,7 +122,7 @@ function FilterItemCard({
             value={item.category}
             onChange={(e) => {
               const category = e.target.value;
-              onChange({ ...item, category, shape: DEFAULT_SHAPE[category] ?? item.shape });
+              onChange({ ...item, category, model: "", shape: DEFAULT_SHAPE[category] ?? item.shape });
             }}
             className="rounded-md border-[1.5px] border-black/40 bg-white px-2 py-1 text-sm font-semibold outline-none focus:border-black"
           >
@@ -131,58 +134,51 @@ function FilterItemCard({
           </select>
         </label>
 
-        <TextField
-          label="Modèle (marque, valeur…)"
-          value={item.model}
-          onChange={(v) => onChange({ ...item, model: v })}
-          listId={datalistId}
-        />
-        <datalist id={datalistId}>
-          {(MODEL_SUGGESTIONS[item.category] ?? []).map((m) => (
-            <option key={m} value={m} />
+        {!NO_MODEL_CATEGORIES.has(item.category) &&
+          (selectModels ? (
+            <label className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Modèle</span>
+              <select
+                value={item.model}
+                onChange={(e) => onChange({ ...item, model: e.target.value })}
+                className="rounded-md border-[1.5px] border-black/40 bg-white px-2 py-1 text-sm font-semibold outline-none focus:border-black"
+              >
+                <option value="">— Choisir —</option>
+                {selectModels.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <TextField label="Modèle" value={item.model} onChange={(v) => onChange({ ...item, model: v })} />
           ))}
-        </datalist>
-        <TextField label="N° série / repère (#)" value={item.serial} onChange={(v) => onChange({ ...item, serial: v })} mono />
-        <NotesField value={item.notes} onChange={(v) => onChange({ ...item, notes: v })} />
 
-        <div className="flex flex-wrap items-center gap-4">
-          <SegmentedToggle
-            value={item.shape}
-            options={[
-              { value: "rect", label: "Carré" },
-              { value: "circle", label: "Rond" },
-            ]}
-            onChange={(shape: FilterShape) => onChange({ ...item, shape })}
-          />
-          <SegmentedToggle
-            value={item.pairLabels}
-            options={[
-              { value: "av-ar", label: "Av. / Ar." },
-              { value: "camera-comedien", label: "Caméra / Comédien" },
-            ]}
-            onChange={(pairLabels: FilterPairLabels) => onChange({ ...item, pairLabels })}
-          />
-        </div>
+        <NotesField value={item.notes} onChange={(v) => onChange({ ...item, notes: v })} />
 
         <MarkToolPalette tool={tool} onToolChange={setTool} />
         <div className="flex items-end justify-center gap-3 pt-1">
           <MarkableDiagram
             shape={item.shape}
-            dims={CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre}
+            dims={dims}
+            frameless={!!art}
+            backgroundSrc={art}
             value={item.front}
             onChange={(d) => onChange({ ...item, front: d })}
             tool={tool}
-            label={pairLabelText[0]}
-            shade={item.pairLabels === "camera-comedien"}
+            label="Av."
           />
           <MarkableDiagram
             shape={item.shape}
-            dims={CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre}
+            dims={dims}
+            frameless={!!art}
+            backgroundSrc={art}
+            imgFlip180={!!art}
             value={item.back}
             onChange={(d) => onChange({ ...item, back: d })}
             tool={tool}
-            label={pairLabelText[1]}
-            shade={item.pairLabels === "camera-comedien"}
+            label="Ar."
           />
         </div>
       </div>
