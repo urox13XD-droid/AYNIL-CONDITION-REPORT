@@ -134,7 +134,7 @@ export function newFilterItem(): FilterItem {
     model: "",
     notes: "",
     shape: "rect",
-    diopterLarge: false,
+    diopterSize: "138",
     front: emptyDiagram(),
     back: emptyDiagram(),
   };
@@ -158,7 +158,7 @@ function FilterItemCard({
   const art = CATEGORY_ART[item.category];
   const isDiopter = DIOPTER_CATEGORIES.has(item.category);
   const dims = isDiopter
-    ? squareDims((item.diopterLarge ? 156 : 138) / MM_PER_INCH)
+    ? squareDims(Number(item.diopterSize) / MM_PER_INCH)
     : (CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre);
   const gradient = GRADIENT_CATEGORY[item.category];
   const dividerLine = item.category === "Dioptrie Split";
@@ -206,14 +206,16 @@ function FilterItemCard({
           ))}
 
         {isDiopter && (
-          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-black/70">
-            <input
-              type="checkbox"
-              checked={item.diopterLarge}
-              onChange={(e) => onChange({ ...item, diopterLarge: e.target.checked })}
-              className="h-3.5 w-3.5 accent-black"
-            />
-            Ø156mm (au lieu de 138mm)
+          <label className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Taille</span>
+            <select
+              value={item.diopterSize}
+              onChange={(e) => onChange({ ...item, diopterSize: e.target.value as "138" | "156" })}
+              className="rounded-md border-[1.5px] border-black/40 bg-white px-2 py-1 text-sm font-semibold outline-none focus:border-black"
+            >
+              <option value="138">Ø138mm</option>
+              <option value="156">Ø156mm</option>
+            </select>
           </label>
         )}
 
