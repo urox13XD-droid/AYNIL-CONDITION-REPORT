@@ -6,7 +6,7 @@ export interface MarkPoint {
   y: number;
 }
 
-export type MarkTool = "scratch" | "impact" | "smudge" | "pen";
+export type MarkTool = "scratch" | "impact" | "smudge" | "pen" | "pen-thin";
 
 export interface Mark {
   id: string;
