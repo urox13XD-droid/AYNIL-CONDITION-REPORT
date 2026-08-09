@@ -6,9 +6,11 @@ import { FilterReportView } from "@/components/FilterReportView";
 import { MonitoringReportView } from "@/components/MonitoringReportView";
 import { OpticalReportView } from "@/components/OpticalReportView";
 import { ReportTabs } from "@/components/ReportTabs";
+import { SharedSessionBar } from "@/components/SharedSessionBar";
 import { Toolbar } from "@/components/Toolbar";
 import { UndoRedoDock } from "@/components/UndoRedoDock";
 import { useReportSession } from "@/lib/useReportSession";
+import { useSharedSession } from "@/lib/useSharedSession";
 import { FilterItem, MonitoringItem, OpticalEntry, ReportKind } from "@/lib/types";
 
 export default function Home() {
@@ -18,6 +20,7 @@ export default function Home() {
   const optical = useReportSession<OpticalEntry>("optical");
   const filter = useReportSession<FilterItem>("filter");
   const monitoring = useReportSession<MonitoringItem>("monitoring");
+  const shared = useSharedSession(optical, filter, monitoring);
 
   useEffect(() => {
     if (!toast) return;
@@ -77,6 +80,7 @@ export default function Home() {
         onOpenProject={active.open}
         onDeleteProject={handleDelete}
       />
+      <SharedSessionBar sessionName={shared.sessionName} status={shared.status} error={shared.error} onJoin={shared.join} onLeave={shared.leave} />
       <ReportTabs active={activeKind} onChange={setActiveKind} />
       <main className="relative min-h-0 flex-1 overflow-y-auto">
         {activeKind === "optical" && (
