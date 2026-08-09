@@ -28,12 +28,25 @@ export type FilterPairLabels = "av-ar" | "camera-comedien";
 
 export interface OpticalItem {
   id: string;
+  entryKind: "item";
   name: string;
   serial: string;
   notes: string;
   front: DiagramState;
   back: DiagramState;
+  /** lens body / barrel condition — revealed on demand via the card's corner notch */
+  body: DiagramState;
+  bodyOpen: boolean;
 }
+
+/** a full-width, removable banner used to bundle several lenses of the same series (e.g. a Cooke S4 set) without retyping the series name on every card */
+export interface OpticalGroupMarker {
+  id: string;
+  entryKind: "group";
+  label: string;
+}
+
+export type OpticalEntry = OpticalItem | OpticalGroupMarker;
 
 export interface FilterItem {
   id: string;

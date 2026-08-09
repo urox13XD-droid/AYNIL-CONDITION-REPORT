@@ -99,6 +99,15 @@ export function MarkToolPalette({
 }
 
 /** one drawable shape (a lens element, a screen, a filter glass) with an SVG mark overlay */
+const SIZE_CLASSES: Record<string, string> = {
+  "circle-md": "h-32 w-32 rounded-full sm:h-36 sm:w-36",
+  "circle-sm": "h-20 w-20 rounded-full sm:h-24 sm:w-24",
+  "rect-md": "h-28 w-36 rounded-md sm:h-32 sm:w-40",
+  "rect-sm": "h-20 w-28 rounded-md sm:h-24 sm:w-32",
+  "rect-screen": "h-28 w-48 rounded-md sm:h-32 sm:w-56",
+  "rect-body": "h-64 w-40 rounded-md sm:h-72 sm:w-44",
+};
+
 export function MarkableDiagram({
   shape,
   value,
@@ -107,6 +116,7 @@ export function MarkableDiagram({
   label,
   shade = false,
   size = "md",
+  backgroundSrc,
 }: {
   shape: "circle" | "rect";
   value: DiagramState;
@@ -115,8 +125,10 @@ export function MarkableDiagram({
   label?: string;
   /** light gray fill, used for the polarizer "côté caméra/comédien" backing in the paper form */
   shade?: boolean;
-  /** "sm" renders a visibly smaller shape — used for the rear lens element (Ar.), which reads smaller than the front (Av.) on the paper form */
-  size?: "md" | "sm";
+  /** "sm" reads smaller (rear lens element) · "screen" is a wide monitor aspect · "body" is a tall lens-barrel aspect */
+  size?: "md" | "sm" | "screen" | "body";
+  /** a traced reference drawing (e.g. a lens barrel) shown behind the mark overlay */
+  backgroundSrc?: string;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<MarkPoint[] | null>(null);
@@ -265,23 +277,28 @@ export function MarkableDiagram({
     return null;
   })();
 
+  const sizeClass = SIZE_CLASSES[`${shape}-${size}`] ?? SIZE_CLASSES[`${shape}-md`];
+
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="relative">
+      <div
+        className={`relative overflow-hidden border-[2.5px] border-black bg-white ${sizeClass}`}
+        style={shade ? { backgroundColor: "#e5e5e5" } : undefined}
+      >
+        {backgroundSrc && (
+          // eslint-disable-next-line @next/next/no-img-element -- traced reference art, not an optimizable content image
+          <img
+            src={backgroundSrc}
+            alt=""
+            draggable={false}
+            className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
+          />
+        )}
         <svg
           ref={svgRef}
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
-          className={`bg-white touch-none border-[2.5px] border-black ${
-            shape === "circle"
-              ? size === "sm"
-                ? "h-20 w-20 rounded-full sm:h-24 sm:w-24"
-                : "h-32 w-32 rounded-full sm:h-36 sm:w-36"
-              : size === "sm"
-                ? "h-20 w-28 rounded-md sm:h-24 sm:w-32"
-                : "h-28 w-36 rounded-md sm:h-32 sm:w-40"
-          }`}
-          style={shade ? { backgroundColor: "#e5e5e5" } : undefined}
+          className="absolute inset-0 h-full w-full touch-none"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}

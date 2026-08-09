@@ -5,8 +5,14 @@ import { AddItemTile } from "@/components/AddItemTile";
 import { HeaderFields } from "@/components/HeaderFields";
 import { ItemCardShell } from "@/components/ItemCardShell";
 import { ActiveTool, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
+import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
+import { useItemSelection } from "@/lib/useItemSelection";
 import { emptyDiagram, FilterItem, FilterPairLabels, FilterShape, newId, ReportHeader } from "@/lib/types";
+
+function cloneFilterItem(item: FilterItem): FilterItem {
+  return { ...item, id: newId("flt"), front: { marks: [...item.front.marks] }, back: { marks: [...item.back.marks] } };
+}
 
 const CATEGORIES = ["Neutre carré 4x5.6/4x4", "Neutre carré 6x6", "Polarisant", "Dioptrie", "Autre"] as const;
 
@@ -69,17 +75,21 @@ function FilterItemCard({
   item,
   onChange,
   onRemove,
+  selected,
+  onToggleSelect,
 }: {
   item: FilterItem;
   onChange: (item: FilterItem) => void;
   onRemove: () => void;
+  selected: boolean;
+  onToggleSelect: () => void;
 }) {
   const [tool, setTool] = useState<ActiveTool>("scratch");
   const datalistId = `models-${item.id}`;
   const pairLabelText = item.pairLabels === "av-ar" ? ["Av.", "Ar."] : ["Côté caméra", "Côté comédien"];
 
   return (
-    <ItemCardShell onRemove={onRemove}>
+    <ItemCardShell onRemove={onRemove} selected={selected} onToggleSelect={onToggleSelect}>
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Catégorie</span>
@@ -167,6 +177,7 @@ export function FilterReportView({
   items: FilterItem[];
   onItemsChange: (items: FilterItem[]) => void;
 }) {
+  const selection = useItemSelection<FilterItem>(items, onItemsChange, cloneFilterItem);
   const updateItem = (id: string, next: FilterItem) => onItemsChange(items.map((it) => (it.id === id ? next : it)));
   const removeItem = (id: string) => onItemsChange(items.filter((it) => it.id !== id));
   const addItem = () => onItemsChange([...items, newFilterItem()]);
@@ -179,10 +190,24 @@ export function FilterReportView({
       </p>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((it) => (
-          <FilterItemCard key={it.id} item={it} onChange={(next) => updateItem(it.id, next)} onRemove={() => removeItem(it.id)} />
+          <FilterItemCard
+            key={it.id}
+            item={it}
+            onChange={(next) => updateItem(it.id, next)}
+            onRemove={() => removeItem(it.id)}
+            selected={selection.selected.has(it.id)}
+            onToggleSelect={() => selection.toggle(it.id)}
+          />
         ))}
         <AddItemTile onAdd={addItem} label="Ajouter un filtre" />
       </div>
+      <SelectionActionBar
+        count={selection.selected.size}
+        onDuplicate={() => selection.duplicateIds([...selection.selected])}
+        onCopy={() => selection.copyIds([...selection.selected])}
+        onDelete={() => selection.removeIds([...selection.selected])}
+        onClear={selection.clearSelection}
+      />
     </div>
   );
 }

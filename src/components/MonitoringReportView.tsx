@@ -5,7 +5,9 @@ import { AddItemTile } from "@/components/AddItemTile";
 import { HeaderFields } from "@/components/HeaderFields";
 import { ItemCardShell } from "@/components/ItemCardShell";
 import { ActiveTool, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
+import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
+import { useItemSelection } from "@/lib/useItemSelection";
 import { emptyDiagram, MonitoringItem, newId, ProtectionState, ReportHeader } from "@/lib/types";
 
 const PROTECTION_OPTIONS: { value: ProtectionState; label: string }[] = [
@@ -19,19 +21,27 @@ export function newMonitoringItem(): MonitoringItem {
   return { id: newId("mon"), name: "", serial: "", protection: "", notes: "", screen: emptyDiagram() };
 }
 
+function cloneMonitoringItem(item: MonitoringItem): MonitoringItem {
+  return { ...item, id: newId("mon"), screen: { marks: [...item.screen.marks] } };
+}
+
 function MonitoringItemCard({
   item,
   onChange,
   onRemove,
+  selected,
+  onToggleSelect,
 }: {
   item: MonitoringItem;
   onChange: (item: MonitoringItem) => void;
   onRemove: () => void;
+  selected: boolean;
+  onToggleSelect: () => void;
 }) {
   const [tool, setTool] = useState<ActiveTool>("scratch");
 
   return (
-    <ItemCardShell onRemove={onRemove}>
+    <ItemCardShell onRemove={onRemove} selected={selected} onToggleSelect={onToggleSelect}>
       <div className="flex flex-col gap-3">
         <TextField label="Écran" value={item.name} onChange={(v) => onChange({ ...item, name: v })} placeholder="Ex. SmallHD Cine 7" />
         <TextField label="N° série (#)" value={item.serial} onChange={(v) => onChange({ ...item, serial: v })} mono />
@@ -52,7 +62,7 @@ function MonitoringItemCard({
         <NotesField value={item.notes} onChange={(v) => onChange({ ...item, notes: v })} />
         <MarkToolPalette tool={tool} onToolChange={setTool} />
         <div className="flex items-center justify-center pt-1">
-          <MarkableDiagram shape="rect" value={item.screen} onChange={(d) => onChange({ ...item, screen: d })} tool={tool} />
+          <MarkableDiagram shape="rect" size="screen" value={item.screen} onChange={(d) => onChange({ ...item, screen: d })} tool={tool} />
         </div>
       </div>
     </ItemCardShell>
@@ -70,6 +80,7 @@ export function MonitoringReportView({
   items: MonitoringItem[];
   onItemsChange: (items: MonitoringItem[]) => void;
 }) {
+  const selection = useItemSelection<MonitoringItem>(items, onItemsChange, cloneMonitoringItem);
   const updateItem = (id: string, next: MonitoringItem) => onItemsChange(items.map((it) => (it.id === id ? next : it)));
   const removeItem = (id: string) => onItemsChange(items.filter((it) => it.id !== id));
   const addItem = () => onItemsChange([...items, newMonitoringItem()]);
@@ -79,10 +90,24 @@ export function MonitoringReportView({
       <HeaderFields kind="monitoring" header={header} onChange={onHeaderChange} />
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((it) => (
-          <MonitoringItemCard key={it.id} item={it} onChange={(next) => updateItem(it.id, next)} onRemove={() => removeItem(it.id)} />
+          <MonitoringItemCard
+            key={it.id}
+            item={it}
+            onChange={(next) => updateItem(it.id, next)}
+            onRemove={() => removeItem(it.id)}
+            selected={selection.selected.has(it.id)}
+            onToggleSelect={() => selection.toggle(it.id)}
+          />
         ))}
         <AddItemTile onAdd={addItem} label="Ajouter un écran" />
       </div>
+      <SelectionActionBar
+        count={selection.selected.size}
+        onDuplicate={() => selection.duplicateIds([...selection.selected])}
+        onCopy={() => selection.copyIds([...selection.selected])}
+        onDelete={() => selection.removeIds([...selection.selected])}
+        onClear={selection.clearSelection}
+      />
     </div>
   );
 }
