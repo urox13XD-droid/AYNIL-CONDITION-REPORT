@@ -79,55 +79,60 @@ export function useSharedSession(
       setStatus("connecting");
       setError(null);
 
-      const { data: existing, error: fetchError } = await supabase
-        .from("condition_sessions")
-        .select("data")
-        .eq("id", id)
-        .maybeSingle();
+      try {
+        const { data: existing, error: fetchError } = await supabase
+          .from("condition_sessions")
+          .select("data")
+          .eq("id", id)
+          .maybeSingle();
 
-      if (fetchError) {
-        setError(fetchError.message);
-        setStatus("error");
-        return;
-      }
-
-      if (existing) {
-        const payload = existing.data as SharedPayload;
-        lastSyncedJson.current = JSON.stringify(payload);
-        applyRemote(payload);
-      } else {
-        const payload: SharedPayload = {
-          optical: { header: optical.session.header, items: optical.session.items },
-          filter: { header: filter.session.header, items: filter.session.items },
-          monitoring: { header: monitoring.session.header, items: monitoring.session.items },
-        };
-        const { error: insertError } = await supabase.from("condition_sessions").insert({ id, data: payload });
-        if (insertError) {
-          setError(insertError.message);
+        if (fetchError) {
+          setError(fetchError.message);
           setStatus("error");
           return;
         }
-        lastSyncedJson.current = JSON.stringify(payload);
-      }
 
-      const channel = supabase
-        .channel(`condition_session_${id}`)
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "condition_sessions", filter: `id=eq.${id}` },
-          (change) => {
-            const incoming = (change.new as { data: SharedPayload }).data;
-            const json = JSON.stringify(incoming);
-            if (json === lastSyncedJson.current) return; // our own write echoed back
-            lastSyncedJson.current = json;
-            applyRemote(incoming);
+        if (existing) {
+          const payload = existing.data as SharedPayload;
+          lastSyncedJson.current = JSON.stringify(payload);
+          applyRemote(payload);
+        } else {
+          const payload: SharedPayload = {
+            optical: { header: optical.session.header, items: optical.session.items },
+            filter: { header: filter.session.header, items: filter.session.items },
+            monitoring: { header: monitoring.session.header, items: monitoring.session.items },
+          };
+          const { error: insertError } = await supabase.from("condition_sessions").insert({ id, data: payload });
+          if (insertError) {
+            setError(insertError.message);
+            setStatus("error");
+            return;
           }
-        )
-        .subscribe();
-      channelRef.current = channel;
+          lastSyncedJson.current = JSON.stringify(payload);
+        }
 
-      setSessionName(id);
-      setStatus("synced");
+        const channel = supabase
+          .channel(`condition_session_${id}`)
+          .on(
+            "postgres_changes",
+            { event: "UPDATE", schema: "public", table: "condition_sessions", filter: `id=eq.${id}` },
+            (change) => {
+              const incoming = (change.new as { data: SharedPayload }).data;
+              const json = JSON.stringify(incoming);
+              if (json === lastSyncedJson.current) return; // our own write echoed back
+              lastSyncedJson.current = json;
+              applyRemote(incoming);
+            }
+          )
+          .subscribe();
+        channelRef.current = channel;
+
+        setSessionName(id);
+        setStatus("synced");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Impossible de joindre le serveur de partage.");
+        setStatus("error");
+      }
     },
     [applyRemote, optical, filter, monitoring]
   );
@@ -145,10 +150,15 @@ export function useSharedSession(
     if (json === lastSyncedJson.current) return;
 
     const t = setTimeout(async () => {
-      const { error: updateError } = await client.from("condition_sessions").update({ data: payload }).eq("id", sessionName);
-      lastSyncedJson.current = json;
-      setStatus(updateError ? "error" : "synced");
-      if (updateError) setError(updateError.message);
+      try {
+        const { error: updateError } = await client.from("condition_sessions").update({ data: payload }).eq("id", sessionName);
+        lastSyncedJson.current = json;
+        setStatus(updateError ? "error" : "synced");
+        if (updateError) setError(updateError.message);
+      } catch (e) {
+        setStatus("error");
+        setError(e instanceof Error ? e.message : "Impossible d'envoyer les modifications.");
+      }
     }, PUSH_DEBOUNCE_MS);
 
     return () => clearTimeout(t);
