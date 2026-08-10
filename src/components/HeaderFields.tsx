@@ -1,5 +1,8 @@
 import { Logo } from "@/components/Logo";
+import { MarkableDiagram } from "@/components/MarkableDiagram";
 import { ReportHeader, ReportKind, REPORT_TITLES } from "@/lib/types";
+
+const SIGNATURE_DIMS = { width: 170, height: 70 };
 
 function Field({
   label,
@@ -52,6 +55,17 @@ export function HeaderFields({
           value={header.assistant}
           onChange={(v) => set({ assistant: v })}
         />
+        <div className="flex items-center">
+          <MarkableDiagram
+            shape="rect"
+            dims={SIGNATURE_DIMS}
+            printFullSize
+            value={header.signature}
+            onChange={(d) => set({ signature: d })}
+            tool="pen"
+            label="Signature"
+          />
+        </div>
       </div>
       <p className="text-[11px] italic text-black/50 print:text-[7px]">* Remettre une copie (papier ou PDF) au loueur avant le départ</p>
     </div>

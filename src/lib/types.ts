@@ -86,10 +86,16 @@ export interface ReportHeader {
   film: string;
   loueur: string;
   assistant: string;
+  signature: DiagramState;
 }
 
 export function emptyHeader(): ReportHeader {
-  return { date: "", prod: "", film: "", loueur: "", assistant: "" };
+  return { date: "", prod: "", film: "", loueur: "", assistant: "", signature: emptyDiagram() };
+}
+
+/** fills in defaults for fields missing from headers saved before they existed (e.g. signature) */
+export function normalizeHeader(header?: Partial<ReportHeader>): ReportHeader {
+  return { ...emptyHeader(), ...header };
 }
 
 export interface ConditionProject<T> {

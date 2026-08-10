@@ -158,6 +158,7 @@ export function MarkableDiagram({
   dividerLine = false,
   gradient,
   gradientFlip = false,
+  printFullSize = false,
 }: {
   shape: "circle" | "rect";
   value: DiagramState;
@@ -182,6 +183,8 @@ export function MarkableDiagram({
   gradient?: "soft" | "hard";
   /** mirror the gradient direction — used so the back side isn't a plain copy of the front */
   gradientFlip?: boolean;
+  /** keep the on-screen size when printing — for one-off elements (e.g. a signature) that shouldn't shrink like the repeated item diagrams */
+  printFullSize?: boolean;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<MarkPoint[] | null>(null);
@@ -331,9 +334,10 @@ export function MarkableDiagram({
     return null;
   })();
 
-  const effectiveDims = isPrinting
-    ? (dims ? scaleToPrint(dims) : (PRINT_SIZE_DIMS[`${shape}-${size}`] ?? PRINT_SIZE_DIMS[`${shape}-md`]))
-    : dims;
+  const effectiveDims =
+    isPrinting && !printFullSize
+      ? (dims ? scaleToPrint(dims) : (PRINT_SIZE_DIMS[`${shape}-${size}`] ?? PRINT_SIZE_DIMS[`${shape}-md`]))
+      : dims;
   const sizeClass = effectiveDims ? "" : (SIZE_CLASSES[`${shape}-${size}`] ?? SIZE_CLASSES[`${shape}-md`]);
   const roundedClass = effectiveDims ? (shape === "circle" ? "rounded-full" : "rounded-md") : "";
   const chromeClass = frameless ? "" : `border-[2.5px] border-black bg-white ${roundedClass}`;

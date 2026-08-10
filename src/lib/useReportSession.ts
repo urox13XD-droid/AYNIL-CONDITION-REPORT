@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteProject, listProjects, loadCurrent, newProjectId, saveCurrent, upsertProject } from "./storage";
-import { ConditionProject, emptyHeader, ReportHeader, ReportKind } from "./types";
+import { ConditionProject, emptyHeader, normalizeHeader, ReportHeader, ReportKind } from "./types";
 
 interface Session<T> {
   loaded: boolean;
@@ -56,7 +56,7 @@ export function useReportSession<T>(kind: ReportKind) {
   useEffect(() => {
     const current = loadCurrent<T>(kind);
     const initial = current
-      ? { projectId: current.id, title: current.name, header: current.header, items: current.items }
+      ? { projectId: current.id, title: current.name, header: normalizeHeader(current.header), items: current.items }
       : { projectId: newProjectId(), title: BLANK_TITLE, header: emptyHeader(), items: [] as T[] };
     latest.current = { header: initial.header, items: initial.items };
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from an external store (localStorage) on mount
@@ -186,9 +186,10 @@ export function useReportSession<T>(kind: ReportKind) {
     (id: string) => {
       const project = listProjects<T>(kind).find((p) => p.id === id);
       if (!project) return;
-      latest.current = { header: project.header, items: project.items };
+      const header = normalizeHeader(project.header);
+      latest.current = { header, items: project.items };
       resetHistory();
-      setSession({ loaded: true, projectId: project.id, title: project.name, header: project.header, items: project.items });
+      setSession({ loaded: true, projectId: project.id, title: project.name, header, items: project.items });
       saveCurrent(kind, project);
     },
     [kind]
@@ -222,7 +223,7 @@ export function useReportSession<T>(kind: ReportKind) {
         try {
           const project = JSON.parse(String(reader.result)) as ConditionProject<T>;
           if (!Array.isArray(project.items)) throw new Error("invalid");
-          const header = project.header ?? emptyHeader();
+          const header = normalizeHeader(project.header);
           latest.current = { header, items: project.items };
           resetHistory();
           setSession({

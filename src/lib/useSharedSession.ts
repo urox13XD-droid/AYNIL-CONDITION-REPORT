@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
-import { CameraItem, FilterItem, MonitoringItem, OpticalEntry, ReportHeader } from "./types";
+import { CameraItem, FilterItem, MonitoringItem, normalizeHeader, OpticalEntry, ReportHeader } from "./types";
 
 interface KindSlot<T> {
   session: { header: ReportHeader; items: T[] };
@@ -63,14 +63,14 @@ export function useSharedSession(
 
   const applyRemote = useCallback(
     (payload: SharedPayload) => {
-      optical.setHeader(payload.optical.header);
+      optical.setHeader(normalizeHeader(payload.optical.header));
       optical.setItems(payload.optical.items);
-      filter.setHeader(payload.filter.header);
+      filter.setHeader(normalizeHeader(payload.filter.header));
       filter.setItems(payload.filter.items);
-      monitoring.setHeader(payload.monitoring.header);
+      monitoring.setHeader(normalizeHeader(payload.monitoring.header));
       monitoring.setItems(payload.monitoring.items);
       if (payload.camera) {
-        camera.setHeader(payload.camera.header);
+        camera.setHeader(normalizeHeader(payload.camera.header));
         camera.setItems(payload.camera.items);
       }
     },
