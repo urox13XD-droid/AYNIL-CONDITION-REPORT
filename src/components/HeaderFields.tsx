@@ -55,7 +55,8 @@ export function HeaderFields({
           value={header.assistant}
           onChange={(v) => set({ assistant: v })}
         />
-        <div className="flex items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold print:text-[9px]">
+          <span className="shrink-0 text-black/70">Signature :</span>
           <MarkableDiagram
             shape="rect"
             dims={SIGNATURE_DIMS}
@@ -63,7 +64,6 @@ export function HeaderFields({
             value={header.signature}
             onChange={(d) => set({ signature: d })}
             tool="pen"
-            label="Signature"
           />
         </div>
       </div>
