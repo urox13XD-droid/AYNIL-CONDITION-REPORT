@@ -45,12 +45,16 @@ body {
     print-color-adjust: exact;
   }
 
-  /* compact report layout: dense grid, small cards, so a dozen items fit on
-     one or two pages instead of one giant box per item */
+  /* compact report layout: dense grid, small cards, small diagrams — so
+     20+ items fit on a page instead of one giant box per item. Sizing is
+     pure CSS (no React state) so it applies the instant the browser starts
+     laying out the print page — a JS "print mode" flag flipped from a
+     beforeprint/matchMedia listener can lose the race against Chrome's
+     print rasterizer and get ignored. */
   .report-grid {
     display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 6px !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 5px !important;
   }
   .print-page {
     break-inside: avoid;
@@ -58,6 +62,11 @@ body {
     border-width: 1.25px !important;
     border-radius: 4px !important;
     box-shadow: none !important;
+  }
+  /* shrinks every drawable box uniformly, whatever its on-screen size —
+     zoom (unlike transform:scale) also shrinks the layout footprint */
+  .diagram-box {
+    zoom: 0.32;
   }
   .print-page * {
     gap: 1.5px !important;

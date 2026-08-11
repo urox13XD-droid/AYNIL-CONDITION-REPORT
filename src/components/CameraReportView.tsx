@@ -101,7 +101,7 @@ export function CameraReportView({
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-6 print:max-w-full print:gap-1.5 print:p-2">
       <HeaderFields kind="camera" header={header} onChange={onHeaderChange} />
-      <div className="report-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="report-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {items.map((it) => (
           <CameraItemCard
             key={it.id}

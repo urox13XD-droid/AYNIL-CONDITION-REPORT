@@ -14,7 +14,7 @@ export function ItemCardShell({
 }) {
   return (
     <div
-      className={`print-page relative rounded-xl border-[2.5px] bg-white p-4 shadow-comic ${
+      className={`print-page relative rounded-xl border-[2.5px] bg-white p-3 shadow-comic ${
         selected ? "border-black ring-2 ring-black ring-offset-2" : "border-black"
       }`}
     >

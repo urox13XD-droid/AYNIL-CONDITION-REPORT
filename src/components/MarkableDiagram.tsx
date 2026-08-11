@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import { DiagramState, Mark, MarkPoint, MarkTool, newId } from "@/lib/types";
-import { useIsPrinting } from "@/lib/useIsPrinting";
 
 export type ActiveTool = MarkTool | "eraser";
 
@@ -128,21 +127,6 @@ function gradientCss(kind: "soft" | "hard", flip: boolean): string {
     : `linear-gradient(${dir}, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 46%, rgba(0,0,0,0.6) 54%, rgba(0,0,0,0.6) 100%)`;
 }
 
-// diagrams shrink to these sizes when printing/exporting so a full report
-// (e.g. a dozen lenses) fits several-up on one page instead of one giant box per item
-const PRINT_TARGET_PX = 28;
-const PRINT_SIZE_DIMS: Record<string, { width: number; height: number }> = {
-  "circle-md": { width: 28, height: 28 },
-  "circle-sm": { width: 22, height: 22 },
-  "rect-md": { width: 28, height: 22 },
-  "rect-sm": { width: 22, height: 17 },
-  "rect-screen": { width: 38, height: 22 },
-};
-function scaleToPrint(dims: { width: number; height: number }): { width: number; height: number } {
-  const scale = PRINT_TARGET_PX / Math.max(dims.width, dims.height);
-  return { width: dims.width * scale, height: dims.height * scale };
-}
-
 export function MarkableDiagram({
   shape,
   value,
@@ -183,14 +167,13 @@ export function MarkableDiagram({
   gradient?: "soft" | "hard";
   /** mirror the gradient direction — used so the back side isn't a plain copy of the front */
   gradientFlip?: boolean;
-  /** keep the on-screen size when printing — for one-off elements (e.g. a signature) that shouldn't shrink like the repeated item diagrams */
+  /** keep the on-screen size when printing — for one-off elements (e.g. a signature) that shouldn't shrink like the repeated item diagrams; applied via a pure-CSS print rule so it's never a JS-timing race */
   printFullSize?: boolean;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<MarkPoint[] | null>(null);
   const draftRef = useRef<MarkPoint[] | null>(null);
   const draggingRef = useRef(false);
-  const isPrinting = useIsPrinting();
 
   const updateDraft = (points: MarkPoint[] | null) => {
     draftRef.current = points;
@@ -334,21 +317,18 @@ export function MarkableDiagram({
     return null;
   })();
 
-  const effectiveDims =
-    isPrinting && !printFullSize
-      ? (dims ? scaleToPrint(dims) : (PRINT_SIZE_DIMS[`${shape}-${size}`] ?? PRINT_SIZE_DIMS[`${shape}-md`]))
-      : dims;
-  const sizeClass = effectiveDims ? "" : (SIZE_CLASSES[`${shape}-${size}`] ?? SIZE_CLASSES[`${shape}-md`]);
-  const roundedClass = effectiveDims ? (shape === "circle" ? "rounded-full" : "rounded-md") : "";
+  const sizeClass = dims ? "" : (SIZE_CLASSES[`${shape}-${size}`] ?? SIZE_CLASSES[`${shape}-md`]);
+  const roundedClass = dims ? (shape === "circle" ? "rounded-full" : "rounded-md") : "";
   const chromeClass = frameless ? "" : `border-[2.5px] border-black bg-white ${roundedClass}`;
+  const printClass = printFullSize ? "print-full-size" : "diagram-box";
 
   return (
     <div className="flex flex-col items-center gap-1">
       <div
-        className={`relative touch-none overflow-hidden overscroll-contain ${chromeClass} ${sizeClass}`}
+        className={`relative touch-none overflow-hidden overscroll-contain ${printClass} ${chromeClass} ${sizeClass}`}
         style={{
           touchAction: "none",
-          ...(effectiveDims ? { width: effectiveDims.width, height: effectiveDims.height } : undefined),
+          ...(dims ? { width: dims.width, height: dims.height } : undefined),
           ...(shade ? { backgroundColor: "#e5e5e5" } : undefined),
           ...(gradient ? { backgroundImage: gradientCss(gradient, gradientFlip) } : undefined),
         }}

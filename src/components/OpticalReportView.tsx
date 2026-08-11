@@ -202,7 +202,7 @@ export function OpticalReportView({
         avant, à gauche pour la face arrière. Le petit bouton en haut à droite de chaque optique permet de
         l&apos;associer à une série (ex. Cooke S4) — le champ principal ne contient alors que la focale.
       </p>
-      <div className="report-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="report-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {items.map((entry) => (
           <OpticalItemCard
             key={entry.id}

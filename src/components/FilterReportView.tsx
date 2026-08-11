@@ -344,7 +344,7 @@ export function FilterReportView({
       <p className="no-print text-xs italic text-black/50">
         Choisissez un repère sur le bord du filtre (étiquette, encoche…) et dessinez-le afin de connaître son orientation.
       </p>
-      <div className="report-grid grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="report-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {items.map((it) => (
           <FilterItemCard
             key={it.id}
