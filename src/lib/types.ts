@@ -50,6 +50,8 @@ export interface FilterItem {
   shape: FilterShape;
   /** Dioptrie / Dioptrie Split only — Ø138 or Ø156mm */
   diopterSize: "138" | "156";
+  /** Filtre à effet only — 4x4 / 4x5.6 / 6x6 */
+  effectSize: "4x4" | "4x5.6" | "6x6";
   front: DiagramState;
   back: DiagramState;
 }

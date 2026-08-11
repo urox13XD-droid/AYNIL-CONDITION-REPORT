@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AddItemTile } from "@/components/AddItemTile";
+import { ComboOption, DeviceNameField } from "@/components/DeviceNameField";
 import { HeaderFields } from "@/components/HeaderFields";
 import { ItemCardShell } from "@/components/ItemCardShell";
 import { ActiveTool, autoDims, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
@@ -31,8 +32,38 @@ const CATEGORIES = [
   "Pola Ø156mm",
   "Dioptrie",
   "Dioptrie Split",
+  "Filtre à effet",
   "Autre",
 ] as const;
+
+// Modèle suggestions for "Filtre à effet" — free typing stays possible, this just offers picks
+const EFFECT_FILTER_NAMES = [
+  "Glimmer Glass",
+  "Classic Soft",
+  "White Promist",
+  "Black Promist",
+  "Hollywood Black Magic",
+  "Soft FX",
+  "Diff Mitchell",
+  "Black Satin",
+  "Satin",
+  "Black Diff",
+  "Gold Diff",
+  "Tiffen 80",
+  "Tiffen 81",
+  "Ultra Contrast",
+  "Low Contrast",
+  "Pearlscent",
+  "Fog",
+  "Tobacco",
+  "Sunset",
+  "Blue Streak",
+  "Smoque",
+  "Day for Night",
+  "Radiant Soft",
+  "Gold Streak",
+];
+const EFFECT_FILTER_OPTIONS: ComboOption[] = EFFECT_FILTER_NAMES.map((name) => ({ id: name, name }));
 
 const DEFAULT_SHAPE: Record<string, FilterShape> = {
   "Neutre 4x4": "rect",
@@ -51,6 +82,7 @@ const DEFAULT_SHAPE: Record<string, FilterShape> = {
   "Pola Ø156mm": "circle",
   Dioptrie: "circle",
   "Dioptrie Split": "circle",
+  "Filtre à effet": "rect",
   Autre: "rect",
 };
 
@@ -106,6 +138,13 @@ const CATEGORY_DIMS: Record<string, { width: number; height: number }> = {
 
 const DIOPTER_CATEGORIES = new Set(["Dioptrie", "Dioptrie Split"]);
 
+// same proportional scale as the equivalent Neutre sizes, so the diagram matches when picked
+const EFFECT_SIZE_DIMS: Record<FilterItem["effectSize"], { width: number; height: number }> = {
+  "4x4": squareDims(4),
+  "4x5.6": landscapeDims(4, 5.65),
+  "6x6": squareDims(6),
+};
+
 const ND_GRADES = ["N 0.3", "N 0.6", "N 0.9", "N 1.2", "N 1.5", "N 1.8", "N 2.1", "N 2.4"];
 const DEG_GRADES = ["N 0.3", "N 0.6", "N 0.9"];
 const DIOPTRIE_VALUES = ["+1/2", "+1", "+2", "+3"];
@@ -135,6 +174,7 @@ export function newFilterItem(): FilterItem {
     notes: "",
     shape: "rect",
     diopterSize: "138",
+    effectSize: "4x4",
     front: emptyDiagram(),
     back: emptyDiagram(),
   };
@@ -157,9 +197,12 @@ function FilterItemCard({
   const selectModels = SELECT_MODELS[item.category];
   const art = CATEGORY_ART[item.category];
   const isDiopter = DIOPTER_CATEGORIES.has(item.category);
+  const isEffectFilter = item.category === "Filtre à effet";
   const dims = isDiopter
     ? squareDims(Number(item.diopterSize) / MM_PER_INCH)
-    : (CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre);
+    : isEffectFilter
+      ? EFFECT_SIZE_DIMS[item.effectSize]
+      : (CATEGORY_DIMS[item.category] ?? CATEGORY_DIMS.Autre);
   const gradient = GRADIENT_CATEGORY[item.category];
   const dividerLine = item.category === "Dioptrie Split";
 
@@ -185,7 +228,16 @@ function FilterItemCard({
         </label>
 
         {!NO_MODEL_CATEGORIES.has(item.category) &&
-          (selectModels ? (
+          (isEffectFilter ? (
+            <DeviceNameField
+              label="Modèle"
+              value={item.model}
+              onChange={(v) => onChange({ ...item, model: v })}
+              onPick={(o) => onChange({ ...item, model: o.name })}
+              options={EFFECT_FILTER_OPTIONS}
+              placeholder="Ex. Glimmer Glass"
+            />
+          ) : selectModels ? (
             <label className="flex flex-col gap-0.5">
               <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Modèle</span>
               <select
@@ -215,6 +267,21 @@ function FilterItemCard({
             >
               <option value="138">Ø138mm</option>
               <option value="156">Ø156mm</option>
+            </select>
+          </label>
+        )}
+
+        {isEffectFilter && (
+          <label className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Taille</span>
+            <select
+              value={item.effectSize}
+              onChange={(e) => onChange({ ...item, effectSize: e.target.value as FilterItem["effectSize"] })}
+              className="rounded-md border-[1.5px] border-black/40 bg-white px-2 py-1 text-sm font-semibold outline-none focus:border-black"
+            >
+              <option value="4x4">4x4</option>
+              <option value="4x5.6">4x5.6</option>
+              <option value="6x6">6x6</option>
             </select>
           </label>
         )}
