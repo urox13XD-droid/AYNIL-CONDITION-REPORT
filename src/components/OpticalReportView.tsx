@@ -195,14 +195,14 @@ export function OpticalReportView({
   };
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-6 print:max-w-full print:gap-1.5 print:p-2">
+    <div className="mx-auto flex max-w-7xl flex-col gap-5 p-6 print:max-w-full print:gap-1.5 print:p-2">
       <HeaderFields kind="optical" header={header} onChange={onHeaderChange} />
       <p className="no-print text-xs italic text-black/50">
         NB : pour repérer l&apos;orientation de l&apos;optique, marquez un point sur la monture à droite pour la face
         avant, à gauche pour la face arrière. Le petit bouton en haut à droite de chaque optique permet de
         l&apos;associer à une série (ex. Cooke S4) — le champ principal ne contient alors que la focale.
       </p>
-      <div className="report-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+      <div className="report-grid grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {items.map((entry) => (
           <OpticalItemCard
             key={entry.id}
