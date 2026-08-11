@@ -16,6 +16,7 @@ function cloneFilterItem(item: FilterItem): FilterItem {
 }
 
 const CATEGORIES = [
+  "Filtre à effet",
   "Neutre 4x4",
   "Neutre 4x5.6",
   "Neutre 5x5",
@@ -32,7 +33,6 @@ const CATEGORIES = [
   "Pola Ø156mm",
   "Dioptrie",
   "Dioptrie Split",
-  "Filtre à effet",
   "Autre",
 ] as const;
 
@@ -169,7 +169,7 @@ const NO_MODEL_CATEGORIES = new Set(["Polaframe 6x6", "Polaframe 4x5.6", "Pola �
 export function newFilterItem(): FilterItem {
   return {
     id: newId("flt"),
-    category: CATEGORIES[0],
+    category: "Neutre 4x4",
     model: "",
     notes: "",
     shape: "rect",
