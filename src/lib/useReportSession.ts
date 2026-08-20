@@ -16,11 +16,16 @@ const BLANK_TITLE = "Nouveau rapport";
 const HISTORY_DEBOUNCE_MS = 600;
 const HISTORY_LIMIT = 50;
 
+interface Snapshot<T> {
+  header: ReportHeader;
+  items: T[];
+}
+
 interface History<T> {
-  past: T[][];
-  future: T[][];
-  /** items snapshot captured just before the in-progress debounced burst (typing, drawing) started */
-  pending: T[] | null;
+  past: Snapshot<T>[];
+  future: Snapshot<T>[];
+  /** snapshot captured just before the in-progress debounced burst (typing, drawing — including the signature) started */
+  pending: Snapshot<T> | null;
 }
 
 export function useReportSession<T>(kind: ReportKind) {
@@ -70,19 +75,14 @@ export function useReportSession<T>(kind: ReportKind) {
 
   const setTitle = useCallback((title: string) => setSession((s) => ({ ...s, title })), []);
 
-  const setHeader = useCallback((header: ReportHeader) => {
-    latest.current.header = header;
-    setSession((s) => ({ ...s, header }));
-  }, []);
-
-  const setItems = useCallback((items: T[]) => {
-    const prevItems = latest.current.items;
-    // add/remove/duplicate/paste change the item count and get their own undo step
-    // immediately; in-place edits (typing, drawing) coalesce into one step after a
-    // short pause so undo doesn't have to be pressed once per keystroke
-    const structural = items.length !== prevItems.length;
-    latest.current.items = items;
-    setSession((s) => ({ ...s, items }));
+  // shared by setHeader/setItems: structural changes (add/remove/duplicate/paste,
+  // which change the item count) get their own undo step immediately; in-place
+  // edits (typing, drawing — including the signature) coalesce into one step
+  // after a short pause so undo doesn't have to be pressed once per keystroke/stroke
+  const commit = useCallback((nextHeader: ReportHeader, nextItems: T[], structural: boolean) => {
+    const prev: Snapshot<T> = { header: latest.current.header, items: latest.current.items };
+    latest.current = { header: nextHeader, items: nextItems };
+    setSession((s) => ({ ...s, header: nextHeader, items: nextItems }));
 
     if (structural) {
       if (debounceRef.current) {
@@ -91,13 +91,13 @@ export function useReportSession<T>(kind: ReportKind) {
       }
       const h = history.current;
       const withPending = h.pending ? [...h.past, h.pending] : h.past;
-      history.current = { past: [...withPending, prevItems].slice(-HISTORY_LIMIT), future: [], pending: null };
+      history.current = { past: [...withPending, prev].slice(-HISTORY_LIMIT), future: [], pending: null };
       setCanUndo(true);
       setCanRedo(false);
     } else {
       const h = history.current;
       if (!h.pending) {
-        history.current = { ...h, pending: prevItems };
+        history.current = { ...h, pending: prev };
         setCanUndo(true);
       }
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -113,6 +113,16 @@ export function useReportSession<T>(kind: ReportKind) {
     }
   }, []);
 
+  const setHeader = useCallback(
+    (header: ReportHeader) => commit(header, latest.current.items, false),
+    [commit]
+  );
+
+  const setItems = useCallback(
+    (items: T[]) => commit(latest.current.header, items, items.length !== latest.current.items.length),
+    [commit]
+  );
+
   const undo = useCallback(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -122,14 +132,15 @@ export function useReportSession<T>(kind: ReportKind) {
     if (h.pending) h = { past: [...h.past, h.pending], future: h.future, pending: null };
     if (h.past.length === 0) return;
     const prevSnapshot = h.past[h.past.length - 1];
+    const currentSnapshot: Snapshot<T> = { header: latest.current.header, items: latest.current.items };
     const nextHistory = {
       past: h.past.slice(0, -1),
-      future: [latest.current.items, ...h.future].slice(0, HISTORY_LIMIT),
+      future: [currentSnapshot, ...h.future].slice(0, HISTORY_LIMIT),
       pending: null,
     };
     history.current = nextHistory;
-    latest.current.items = prevSnapshot;
-    setSession((s) => ({ ...s, items: prevSnapshot }));
+    latest.current = prevSnapshot;
+    setSession((s) => ({ ...s, header: prevSnapshot.header, items: prevSnapshot.items }));
     setCanUndo(nextHistory.past.length > 0);
     setCanRedo(true);
   }, []);
@@ -138,14 +149,15 @@ export function useReportSession<T>(kind: ReportKind) {
     const h = history.current;
     if (h.future.length === 0) return;
     const nextSnapshot = h.future[0];
+    const currentSnapshot: Snapshot<T> = { header: latest.current.header, items: latest.current.items };
     const nextHistory = {
-      past: [...h.past, latest.current.items].slice(-HISTORY_LIMIT),
+      past: [...h.past, currentSnapshot].slice(-HISTORY_LIMIT),
       future: h.future.slice(1),
       pending: null,
     };
     history.current = nextHistory;
-    latest.current.items = nextSnapshot;
-    setSession((s) => ({ ...s, items: nextSnapshot }));
+    latest.current = nextSnapshot;
+    setSession((s) => ({ ...s, header: nextSnapshot.header, items: nextSnapshot.items }));
     setCanUndo(true);
     setCanRedo(nextHistory.future.length > 0);
   }, []);

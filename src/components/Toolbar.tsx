@@ -20,6 +20,7 @@ export function Toolbar({
   projects,
   onOpenProject,
   onDeleteProject,
+  sessionBar,
 }: {
   title: string;
   onTitleChange: (v: string) => void;
@@ -31,6 +32,8 @@ export function Toolbar({
   projects: ToolbarProject[];
   onOpenProject: (id: string) => void;
   onDeleteProject: (id: string) => void;
+  /** shared-session status/join content, rendered inline at the end of the button row to save a line */
+  sessionBar?: React.ReactNode;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -118,6 +121,12 @@ export function Toolbar({
         <ComicButton onClick={onSave} variant="solid" className="shrink-0">
           Sauvegarder
         </ComicButton>
+        {sessionBar && (
+          <>
+            <div className="mx-1 h-6 w-[1.5px] shrink-0 bg-black/10" />
+            {sessionBar}
+          </>
+        )}
       </div>
     </header>
   );

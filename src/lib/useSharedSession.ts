@@ -50,6 +50,12 @@ export function useSharedSession(
 
   const lastSyncedJson = useRef<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  // true from the moment a local edit differs from the server until our push
+  // for it lands — an incoming realtime update during that window is either
+  // our own stale echo or a genuine conflict, and applying it would clobber
+  // the edit that's still in flight (e.g. a just-picked device art
+  // flickering back out), so it's deferred until our own push completes
+  const pendingLocalPush = useRef(false);
 
   const buildPayload = useCallback(
     (): SharedPayload => ({
@@ -83,6 +89,7 @@ export function useSharedSession(
       channelRef.current = null;
     }
     lastSyncedJson.current = null;
+    pendingLocalPush.current = false;
     setSessionName(null);
     setStatus("offline");
     setError(null);
@@ -138,6 +145,7 @@ export function useSharedSession(
               const incoming = (change.new as { data: SharedPayload }).data;
               const json = JSON.stringify(incoming);
               if (json === lastSyncedJson.current) return; // our own write echoed back
+              if (pendingLocalPush.current) return; // a local edit is still in flight — don't clobber it, our own push will supersede this shortly
               lastSyncedJson.current = json;
               applyRemote(incoming);
             }
@@ -163,6 +171,7 @@ export function useSharedSession(
     const json = JSON.stringify(payload);
     if (json === lastSyncedJson.current) return;
 
+    pendingLocalPush.current = true;
     const t = setTimeout(async () => {
       try {
         const { error: updateError } = await client.from("condition_sessions").update({ data: payload }).eq("id", sessionName);
@@ -172,6 +181,8 @@ export function useSharedSession(
       } catch (e) {
         setStatus("error");
         setError(e instanceof Error ? e.message : "Impossible d'envoyer les modifications.");
+      } finally {
+        pendingLocalPush.current = false;
       }
     }, PUSH_DEBOUNCE_MS);
 

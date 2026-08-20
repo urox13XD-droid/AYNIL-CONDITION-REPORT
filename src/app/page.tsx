@@ -82,8 +82,10 @@ export default function Home() {
         projects={active.projects}
         onOpenProject={active.open}
         onDeleteProject={handleDelete}
+        sessionBar={
+          <SharedSessionBar sessionName={shared.sessionName} status={shared.status} error={shared.error} onJoin={shared.join} onLeave={shared.leave} />
+        }
       />
-      <SharedSessionBar sessionName={shared.sessionName} status={shared.status} error={shared.error} onJoin={shared.join} onLeave={shared.leave} />
       <ReportTabs active={activeKind} onChange={setActiveKind} />
       <main className="relative min-h-0 flex-1 overflow-y-auto">
         {activeKind === "optical" && (

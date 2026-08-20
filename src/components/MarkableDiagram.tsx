@@ -174,6 +174,9 @@ export function MarkableDiagram({
   const [draft, setDraft] = useState<MarkPoint[] | null>(null);
   const draftRef = useRef<MarkPoint[] | null>(null);
   const draggingRef = useRef(false);
+  const [hoverEraseId, setHoverEraseId] = useState<string | null>(null);
+  const activeHoverId = tool === "eraser" ? hoverEraseId : null;
+  const strokeFor = (id: string) => (id === activeHoverId ? "#dc2626" : "#000");
 
   const updateDraft = (points: MarkPoint[] | null) => {
     draftRef.current = points;
@@ -192,17 +195,24 @@ export function MarkableDiagram({
     onChange({ marks: [...value.marks, { id: newId("mk"), tool, points }] });
   };
 
+  /** the single mark the eraser would remove from this point — same lookup used for both the red hover preview and the actual delete, so what you see is what you get */
+  const findClosestMark = (p: MarkPoint): string | null => {
+    let best: { id: string; dist: number } | null = null;
+    for (const m of value.marks) {
+      const d = markDistance(m, p);
+      if (d < ERASE_THRESHOLD && (!best || d < best.dist)) best = { id: m.id, dist: d };
+    }
+    return best?.id ?? null;
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
     const p = toPoint(e);
 
     if (tool === "eraser") {
-      let best: { id: string; dist: number } | null = null;
-      for (const m of value.marks) {
-        const d = markDistance(m, p);
-        if (d < ERASE_THRESHOLD && (!best || d < best.dist)) best = { id: m.id, dist: d };
-      }
-      if (best) onChange({ marks: value.marks.filter((m) => m.id !== best!.id) });
+      const id = findClosestMark(p);
+      if (id) onChange({ marks: value.marks.filter((m) => m.id !== id) });
+      setHoverEraseId(null);
       return;
     }
 
@@ -218,6 +228,10 @@ export function MarkableDiagram({
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (tool === "eraser") {
+      setHoverEraseId(findClosestMark(toPoint(e)));
+      return;
+    }
     if (!draggingRef.current) return;
     const p = toPoint(e);
     const prev = draftRef.current;
@@ -226,6 +240,7 @@ export function MarkableDiagram({
   };
 
   const endDrag = () => {
+    setHoverEraseId(null);
     if (!draggingRef.current) return;
     draggingRef.current = false;
     const prev = draftRef.current;
@@ -258,8 +273,8 @@ export function MarkableDiagram({
           key={m.id}
           d={`M ${a.x} ${a.y} Q ${cx} ${cy} ${b.x} ${b.y}`}
           fill="none"
-          stroke="#000"
-          strokeWidth={0.9}
+          stroke={strokeFor(m.id)}
+          strokeWidth={m.id === activeHoverId ? 1.6 : 0.9}
           strokeLinecap="round"
         />
       );
@@ -271,22 +286,45 @@ export function MarkableDiagram({
         const rad = (deg * Math.PI) / 180;
         const dx = Math.cos(rad) * r;
         const dy = Math.sin(rad) * r;
-        return <line key={deg} x1={c.x - dx} y1={c.y - dy} x2={c.x + dx} y2={c.y + dy} stroke="#000" strokeWidth={0.8} strokeLinecap="round" />;
+        return (
+          <line
+            key={deg}
+            x1={c.x - dx}
+            y1={c.y - dy}
+            x2={c.x + dx}
+            y2={c.y + dy}
+            stroke={strokeFor(m.id)}
+            strokeWidth={m.id === activeHoverId ? 1.4 : 0.8}
+            strokeLinecap="round"
+          />
+        );
       });
       return <g key={m.id}>{rays}</g>;
     }
     if (m.tool === "smudge") {
       const [c] = pts;
-      return <circle key={m.id} cx={c.x} cy={c.y} r={3} fill="none" stroke="#000" strokeWidth={0.7} strokeDasharray="1.4 1.4" />;
+      return (
+        <circle
+          key={m.id}
+          cx={c.x}
+          cy={c.y}
+          r={3}
+          fill="none"
+          stroke={strokeFor(m.id)}
+          strokeWidth={m.id === activeHoverId ? 1.3 : 0.7}
+          strokeDasharray="1.4 1.4"
+        />
+      );
     }
     if ((m.tool === "pen" || m.tool === "pen-thin") && pts.length >= 2) {
+      const baseWidth = m.tool === "pen-thin" ? 0.35 : 0.9;
       return (
         <polyline
           key={m.id}
           points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
           fill="none"
-          stroke="#000"
-          strokeWidth={m.tool === "pen-thin" ? 0.35 : 0.9}
+          stroke={strokeFor(m.id)}
+          strokeWidth={m.id === activeHoverId ? baseWidth + 0.7 : baseWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
         />

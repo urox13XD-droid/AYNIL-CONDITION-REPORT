@@ -91,8 +91,14 @@ export interface ReportHeader {
   signature: DiagramState;
 }
 
+export function todayIso(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function emptyHeader(): ReportHeader {
-  return { date: "", prod: "", film: "", loueur: "", assistant: "", signature: emptyDiagram() };
+  return { date: todayIso(), prod: "", film: "", loueur: "", assistant: "", signature: emptyDiagram() };
 }
 
 /** fills in defaults for fields missing from headers saved before they existed (e.g. signature) */
