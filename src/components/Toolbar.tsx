@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ComicButton } from "@/components/ComicButton";
 
@@ -15,7 +15,6 @@ export function Toolbar({
   onNew,
   onSave,
   onExportJson,
-  onImportJson,
   onPrint,
   projects,
   onOpenProject,
@@ -27,7 +26,6 @@ export function Toolbar({
   onNew: () => void;
   onSave: () => void;
   onExportJson: () => void;
-  onImportJson: (file: File) => void;
   onPrint: () => void;
   projects: ToolbarProject[];
   onOpenProject: (id: string) => void;
@@ -35,7 +33,6 @@ export function Toolbar({
   /** shared-session status/join content, rendered inline at the end of the button row to save a line */
   sessionBar?: React.ReactNode;
 }) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -95,20 +92,6 @@ export function Toolbar({
           Nouveau
         </ComicButton>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onImportJson(file);
-            e.target.value = "";
-          }}
-        />
-        <ComicButton onClick={() => fileRef.current?.click()} className="shrink-0">
-          Importer
-        </ComicButton>
         <ComicButton onClick={onExportJson} className="shrink-0">
           Export JSON
         </ComicButton>

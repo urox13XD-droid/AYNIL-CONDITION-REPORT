@@ -45,14 +45,6 @@ export default function Home() {
     [active]
   );
 
-  const handleImport = useCallback(
-    (file: File) => {
-      active.importJson(file);
-      setToast("Rapport importé");
-    },
-    [active]
-  );
-
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -77,7 +69,6 @@ export default function Home() {
         onNew={active.createNew}
         onSave={handleSave}
         onExportJson={active.exportJson}
-        onImportJson={handleImport}
         onPrint={() => window.print()}
         projects={active.projects}
         onOpenProject={active.open}

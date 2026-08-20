@@ -228,32 +228,6 @@ export function useReportSession<T>(kind: ReportKind) {
     URL.revokeObjectURL(url);
   }, [buildProject, kind, session.projectId, session.title]);
 
-  const importJson = useCallback(
-    (file: File) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const project = JSON.parse(String(reader.result)) as ConditionProject<T>;
-          if (!Array.isArray(project.items)) throw new Error("invalid");
-          const header = normalizeHeader(project.header);
-          latest.current = { header, items: project.items };
-          resetHistory();
-          setSession({
-            loaded: true,
-            projectId: project.id || newProjectId(),
-            title: project.name || "Rapport importé",
-            header,
-            items: project.items,
-          });
-        } catch {
-          window.alert("Fichier invalide.");
-        }
-      };
-      reader.readAsText(file);
-    },
-    []
-  );
-
   return {
     session,
     projects,
@@ -265,7 +239,6 @@ export function useReportSession<T>(kind: ReportKind) {
     open,
     remove,
     exportJson,
-    importJson,
     undo,
     redo,
     canUndo,

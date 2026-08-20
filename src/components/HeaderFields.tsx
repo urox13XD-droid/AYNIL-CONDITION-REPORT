@@ -28,7 +28,9 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="min-w-0 flex-1 rounded-md border-b-2 border-black bg-transparent px-1 py-0.5 outline-none focus:bg-black/5 print:border-b print:py-0"
+        className={`min-w-0 flex-1 rounded-md border-b-2 border-black bg-transparent px-1 py-0.5 outline-none focus:bg-black/5 print:border-b print:py-0 ${
+          type === "date" ? "text-base hover:font-bold" : ""
+        }`}
       />
     </label>
   );
