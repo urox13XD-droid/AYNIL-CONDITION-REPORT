@@ -46,6 +46,16 @@ export default function Home() {
     [active]
   );
 
+  const handleNew = useCallback(() => {
+    if (shared.sessionName) {
+      if (!window.confirm(t("confirm.newReportLeavesSession"))) return;
+      shared.leave();
+      active.createNew(true);
+      return;
+    }
+    active.createNew();
+  }, [active, shared, t]);
+
   const handleImportFile = useCallback(
     async (file: File) => {
       try {
@@ -98,7 +108,7 @@ export default function Home() {
       <Toolbar
         title={active.session.title}
         onTitleChange={active.setTitle}
-        onNew={active.createNew}
+        onNew={handleNew}
         onSave={handleSave}
         onExportJson={active.exportJson}
         onPrint={() => window.print()}

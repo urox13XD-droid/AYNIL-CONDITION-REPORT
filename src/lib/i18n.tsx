@@ -26,6 +26,8 @@ const dict = {
     "toast.importInvalid": "Fichier .json invalide ou illisible",
 
     "confirm.newReport": "Créer un nouveau rapport ? Les modifications non sauvegardées seront perdues.",
+    "confirm.newReportLeavesSession":
+      "Vous êtes dans une session partagée. Créer un nouveau rapport va vous en faire quitter (le rapport partagé restera intact pour les autres). Continuer ?",
     "confirm.deleteReport": "Supprimer ce rapport enregistré ?",
 
     "session.offline": "Hors ligne",
@@ -168,6 +170,8 @@ const dict = {
     "toast.importInvalid": "Invalid or unreadable .json file",
 
     "confirm.newReport": "Create a new report? Unsaved changes will be lost.",
+    "confirm.newReportLeavesSession":
+      "You're in a shared session. Creating a new report will make you leave it (the shared report stays intact for the others). Continue?",
     "confirm.deleteReport": "Delete this saved report?",
 
     "session.offline": "Offline",

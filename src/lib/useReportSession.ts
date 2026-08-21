@@ -183,15 +183,20 @@ export function useReportSession<T>(kind: ReportKind) {
     setProjects(listProjects<T>(kind));
   }, [buildProject, kind, session.projectId, session.title]);
 
-  const createNew = useCallback(() => {
-    if (latest.current.items.length > 0 && !window.confirm(t("confirm.newReport"))) {
-      return;
-    }
-    const header = emptyHeader();
-    latest.current = { header, items: [] };
-    resetHistory();
-    setSession({ loaded: true, projectId: newProjectId(), title: BLANK_TITLE, header, items: [] });
-  }, [t]);
+  // skipConfirm lets a caller that already confirmed something more specific (e.g. leaving a
+  // shared session) go straight to clearing, instead of also showing the generic unsaved-changes prompt
+  const createNew = useCallback(
+    (skipConfirm = false) => {
+      if (!skipConfirm && latest.current.items.length > 0 && !window.confirm(t("confirm.newReport"))) {
+        return;
+      }
+      const header = emptyHeader();
+      latest.current = { header, items: [] };
+      resetHistory();
+      setSession({ loaded: true, projectId: newProjectId(), title: BLANK_TITLE, header, items: [] });
+    },
+    [t]
+  );
 
   const open = useCallback(
     (id: string) => {
