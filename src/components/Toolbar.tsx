@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ComicButton } from "@/components/ComicButton";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -36,7 +36,17 @@ export function Toolbar({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { t } = useLocale();
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [menuOpen]);
 
   return (
     <header className="no-print flex flex-col gap-2 border-b-[3px] border-black bg-white px-4 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
@@ -53,7 +63,7 @@ export function Toolbar({
       />
 
       <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0">
-        <div className="relative shrink-0">
+        <div ref={menuRef} className="relative shrink-0">
           <ComicButton onClick={() => setMenuOpen((v) => !v)} title={t("toolbar.reportsMenuTitle")} className="shrink-0">
             {t("toolbar.open")}
           </ComicButton>
