@@ -93,7 +93,7 @@ export function Toolbar({
         </ComicButton>
 
         <ComicButton onClick={onExportJson} className="shrink-0">
-          Export JSON
+          Export Project
         </ComicButton>
         <ComicButton onClick={onPrint} className="shrink-0">
           Imprimer
