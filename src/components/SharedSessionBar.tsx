@@ -21,18 +21,21 @@ const STATUS_DOT: Record<SyncStatus, string> = {
 /** inline content only (no outer bar) — meant to sit inside the toolbar's scrollable row */
 export function SharedSessionBar({
   sessionName,
+  sessionCode,
   status,
   error,
   onJoin,
   onLeave,
 }: {
   sessionName: string | null;
+  sessionCode: string | null;
   status: SyncStatus;
   error: string | null;
-  onJoin: (name: string) => void;
+  onJoin: (name: string, code: string) => void;
   onLeave: () => void;
 }) {
   const [draft, setDraft] = useState("");
+  const [codeDraft, setCodeDraft] = useState("");
 
   if (sessionName) {
     return (
@@ -40,6 +43,7 @@ export function SharedSessionBar({
         <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[status]}`} title={STATUS_LABEL[status]} />
         <span className="shrink-0 text-xs font-bold uppercase tracking-wide">
           <span className="font-mono normal-case">{sessionName}</span>
+          {sessionCode && <span className="ml-1 rounded bg-black px-1.5 py-0.5 font-mono text-white">{sessionCode}</span>}
         </span>
         {error && <span className="shrink-0 text-[10px] font-semibold text-red-600">{error}</span>}
         <ComicButton onClick={onLeave} className="shrink-0">
@@ -55,7 +59,7 @@ export function SharedSessionBar({
       onSubmit={(e) => {
         e.preventDefault();
         const v = draft.trim();
-        if (v) onJoin(v);
+        if (v) onJoin(v, codeDraft.trim());
       }}
     >
       <input
@@ -63,6 +67,14 @@ export function SharedSessionBar({
         onChange={(e) => setDraft(e.target.value)}
         placeholder="Session partagée (ex. tournage-toto)"
         className="min-w-0 max-w-[11rem] shrink-0 rounded-md border-[1.5px] border-black/40 bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-black"
+      />
+      <input
+        value={codeDraft}
+        onChange={(e) => setCodeDraft(e.target.value.replace(/\D/g, "").slice(0, 3))}
+        placeholder="Code"
+        inputMode="numeric"
+        title="Code à 3 chiffres reçu à la création de la session — laisser vide pour créer une nouvelle session"
+        className="w-14 shrink-0 rounded-md border-[1.5px] border-black/40 bg-white px-2 py-1 text-center text-xs font-semibold outline-none focus:border-black"
       />
       <ComicButton type="submit" className="shrink-0">
         Rejoindre / Créer

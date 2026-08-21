@@ -27,6 +27,8 @@ interface SharedPayload {
 export type SyncStatus = "offline" | "connecting" | "synced" | "error";
 
 const PUSH_DEBOUNCE_MS = 700;
+const CODE_CREATE_ATTEMPTS = 6;
+const POSTGRES_UNIQUE_VIOLATION = "23505";
 
 function slugify(name: string): string {
   return name
@@ -38,6 +40,10 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+function randomCode(): string {
+  return String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+}
+
 export function useSharedSession(
   optical: KindSlot<OpticalEntry>,
   filter: KindSlot<FilterItem>,
@@ -45,11 +51,15 @@ export function useSharedSession(
   camera: KindSlot<CameraItem>
 ) {
   const [sessionName, setSessionName] = useState<string | null>(null);
+  const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [status, setStatus] = useState<SyncStatus>("offline");
   const [error, setError] = useState<string | null>(null);
 
   const lastSyncedJson = useRef<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  // the actual Supabase row id in use — distinct from the displayed name/code
+  // because a legacy (pre-code) session is joined by its bare slug
+  const rowIdRef = useRef<string | null>(null);
   // true from the moment a local edit differs from the server until our push
   // for it lands — an incoming realtime update during that window is either
   // our own stale echo or a genuine conflict, and applying it would clobber
@@ -90,83 +100,135 @@ export function useSharedSession(
     }
     lastSyncedJson.current = null;
     pendingLocalPush.current = false;
+    rowIdRef.current = null;
     setSessionName(null);
+    setSessionCode(null);
     setStatus("offline");
     setError(null);
   }, []);
 
+  const subscribeTo = useCallback(
+    (rowId: string) => {
+      const channel = supabase!
+        .channel(`condition_session_${rowId}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "condition_sessions", filter: `id=eq.${rowId}` },
+          (change) => {
+            const incoming = (change.new as { data: SharedPayload }).data;
+            const json = JSON.stringify(incoming);
+            if (json === lastSyncedJson.current) return; // our own write echoed back
+            if (pendingLocalPush.current) return; // a local edit is still in flight — don't clobber it, our own push will supersede this shortly
+            lastSyncedJson.current = json;
+            applyRemote(incoming);
+          }
+        )
+        .subscribe();
+      channelRef.current = channel;
+    },
+    [applyRemote]
+  );
+
   const join = useCallback(
-    async (rawName: string) => {
+    async (rawName: string, rawCode: string) => {
       if (!supabase) {
         setError("Le partage n'est pas configuré sur ce déploiement.");
         setStatus("error");
         return;
       }
-      const id = slugify(rawName);
-      if (!id) return;
+      const baseId = slugify(rawName);
+      if (!baseId) return;
+
+      const trimmedCode = rawCode.trim();
+      const hasCode = /^\d{1,3}$/.test(trimmedCode);
+      const normalizedCode = hasCode ? trimmedCode.padStart(3, "0") : null;
 
       setStatus("connecting");
       setError(null);
 
       try {
-        const { data: existing, error: fetchError } = await supabase
-          .from("condition_sessions")
-          .select("data")
-          .eq("id", id)
-          .maybeSingle();
+        let rowId: string;
+        let code: string | null;
+        let payload: SharedPayload;
 
-        if (fetchError) {
-          setError(fetchError.message);
-          setStatus("error");
-          return;
-        }
+        if (normalizedCode) {
+          // a code was typed: join the exact name+code session, or create it if it doesn't exist yet
+          const codedId = `${baseId}-${normalizedCode}`;
+          const { data: existing, error: fetchError } = await supabase
+            .from("condition_sessions")
+            .select("data")
+            .eq("id", codedId)
+            .maybeSingle();
+          if (fetchError) throw new Error(fetchError.message);
 
-        if (existing) {
-          const payload = existing.data as SharedPayload;
-          lastSyncedJson.current = JSON.stringify(payload);
-          applyRemote(payload);
-        } else {
-          const payload = buildPayload();
-          const { error: insertError } = await supabase.from("condition_sessions").insert({ id, data: payload });
-          if (insertError) {
-            setError(insertError.message);
-            setStatus("error");
-            return;
+          if (existing) {
+            rowId = codedId;
+            code = normalizedCode;
+            payload = existing.data as SharedPayload;
+          } else {
+            payload = buildPayload();
+            const { error: insertError } = await supabase.from("condition_sessions").insert({ id: codedId, data: payload });
+            if (insertError) throw new Error(insertError.message);
+            rowId = codedId;
+            code = normalizedCode;
           }
-          lastSyncedJson.current = JSON.stringify(payload);
+        } else {
+          // no code typed: fall back to a legacy (pre-code) session of that name if one exists,
+          // otherwise create a brand-new session with a freshly generated random code
+          const { data: legacy, error: legacyError } = await supabase
+            .from("condition_sessions")
+            .select("data")
+            .eq("id", baseId)
+            .maybeSingle();
+          if (legacyError) throw new Error(legacyError.message);
+
+          if (legacy) {
+            rowId = baseId;
+            code = null;
+            payload = legacy.data as SharedPayload;
+          } else {
+            let created: { id: string; code: string; payload: SharedPayload } | null = null;
+            for (let i = 0; i < CODE_CREATE_ATTEMPTS; i++) {
+              const candidateCode = randomCode();
+              const candidateId = `${baseId}-${candidateCode}`;
+              const candidatePayload = buildPayload();
+              const { error: insertError } = await supabase
+                .from("condition_sessions")
+                .insert({ id: candidateId, data: candidatePayload });
+              if (!insertError) {
+                created = { id: candidateId, code: candidateCode, payload: candidatePayload };
+                break;
+              }
+              if (insertError.code !== POSTGRES_UNIQUE_VIOLATION) throw new Error(insertError.message);
+            }
+            if (!created) throw new Error("Impossible de générer un code de session unique, réessayez.");
+            rowId = created.id;
+            code = created.code;
+            payload = created.payload;
+          }
         }
 
-        const channel = supabase
-          .channel(`condition_session_${id}`)
-          .on(
-            "postgres_changes",
-            { event: "UPDATE", schema: "public", table: "condition_sessions", filter: `id=eq.${id}` },
-            (change) => {
-              const incoming = (change.new as { data: SharedPayload }).data;
-              const json = JSON.stringify(incoming);
-              if (json === lastSyncedJson.current) return; // our own write echoed back
-              if (pendingLocalPush.current) return; // a local edit is still in flight — don't clobber it, our own push will supersede this shortly
-              lastSyncedJson.current = json;
-              applyRemote(incoming);
-            }
-          )
-          .subscribe();
-        channelRef.current = channel;
+        lastSyncedJson.current = JSON.stringify(payload);
+        applyRemote(payload);
+        subscribeTo(rowId);
+        rowIdRef.current = rowId;
 
-        setSessionName(id);
+        setSessionName(baseId);
+        setSessionCode(code);
         setStatus("synced");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Impossible de joindre le serveur de partage.");
         setStatus("error");
       }
     },
-    [applyRemote, buildPayload]
+    [applyRemote, buildPayload, subscribeTo]
   );
 
   // debounced push whenever local state drifts from what's on the server
   useEffect(() => {
     const client = supabase;
-    if (!sessionName || !client) return;
+    const rowId = rowIdRef.current;
+    if (!sessionName || !rowId || !client) return;
     const payload = buildPayload();
     const json = JSON.stringify(payload);
     if (json === lastSyncedJson.current) return;
@@ -174,7 +236,7 @@ export function useSharedSession(
     pendingLocalPush.current = true;
     const t = setTimeout(async () => {
       try {
-        const { error: updateError } = await client.from("condition_sessions").update({ data: payload }).eq("id", sessionName);
+        const { error: updateError } = await client.from("condition_sessions").update({ data: payload }).eq("id", rowId);
         lastSyncedJson.current = json;
         setStatus(updateError ? "error" : "synced");
         if (updateError) setError(updateError.message);
@@ -188,12 +250,12 @@ export function useSharedSession(
 
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- buildPayload depends on the kind slots, which already gate this effect via .session
-  }, [sessionName, optical.session, filter.session, monitoring.session, camera.session]);
+  }, [sessionName, sessionCode, optical.session, filter.session, monitoring.session, camera.session]);
 
   // leave the channel behind on unmount
   useEffect(() => () => {
     if (channelRef.current) supabase?.removeChannel(channelRef.current);
   }, []);
 
-  return { sessionName, status, error, join, leave };
+  return { sessionName, sessionCode, status, error, join, leave };
 }

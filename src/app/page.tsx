@@ -77,7 +77,14 @@ export default function Home() {
         active={activeKind}
         onChange={setActiveKind}
         sessionBar={
-          <SharedSessionBar sessionName={shared.sessionName} status={shared.status} error={shared.error} onJoin={shared.join} onLeave={shared.leave} />
+          <SharedSessionBar
+            sessionName={shared.sessionName}
+            sessionCode={shared.sessionCode}
+            status={shared.status}
+            error={shared.error}
+            onJoin={shared.join}
+            onLeave={shared.leave}
+          />
         }
       />
       <main className="relative min-h-0 flex-1 overflow-y-auto">
