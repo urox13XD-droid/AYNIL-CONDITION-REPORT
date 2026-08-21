@@ -2,7 +2,16 @@ import { REPORT_LABELS, ReportKind } from "@/lib/types";
 
 const ORDER: ReportKind[] = ["optical", "filter", "monitoring", "camera"];
 
-export function ReportTabs({ active, onChange }: { active: ReportKind; onChange: (k: ReportKind) => void }) {
+export function ReportTabs({
+  active,
+  onChange,
+  sessionBar,
+}: {
+  active: ReportKind;
+  onChange: (k: ReportKind) => void;
+  /** shared-session status/join content, pinned to the right of this row */
+  sessionBar?: React.ReactNode;
+}) {
   return (
     <div className="no-print flex items-center gap-2 overflow-x-auto border-b-[3px] border-black bg-white px-4 py-2.5 sm:flex-wrap">
       {ORDER.map((k) => (
@@ -17,6 +26,7 @@ export function ReportTabs({ active, onChange }: { active: ReportKind; onChange:
           {REPORT_LABELS[k]}
         </button>
       ))}
+      {sessionBar && <div className="ml-auto flex shrink-0 items-center gap-2">{sessionBar}</div>}
     </div>
   );
 }
