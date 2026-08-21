@@ -8,6 +8,7 @@ import { ItemCardShell } from "@/components/ItemCardShell";
 import { ActiveTool, autoDims, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
+import { useLocale } from "@/lib/i18n";
 import { useItemSelection } from "@/lib/useItemSelection";
 import { emptyDiagram, FilterItem, FilterShape, newId, ReportHeader } from "@/lib/types";
 
@@ -15,6 +16,8 @@ function cloneFilterItem(item: FilterItem): FilterItem {
   return { ...item, id: newId("flt"), front: { marks: [...item.front.marks] }, back: { marks: [...item.back.marks] } };
 }
 
+// canonical, language-independent category keys — stored as-is in FilterItem.category and used
+// to look up shape/size/model config below; only the visible <option> text is translated (see t(`category.${c}`))
 const CATEGORIES = [
   "Filtre à effet",
   "Neutre 4x4",
@@ -36,7 +39,7 @@ const CATEGORIES = [
   "Autre",
 ] as const;
 
-// Modèle suggestions for "Filtre à effet" — free typing stays possible, this just offers picks
+// Modèle suggestions for "Filtre à effet" — commercial/brand names, kept identical in both languages
 const EFFECT_FILTER_NAMES = [
   "Glimmer Glass",
   "Classic Soft",
@@ -193,6 +196,7 @@ function FilterItemCard({
   selected: boolean;
   onToggleSelect: () => void;
 }) {
+  const { t } = useLocale();
   const [tool, setTool] = useState<ActiveTool>("pen");
   const selectModels = SELECT_MODELS[item.category];
   const art = CATEGORY_ART[item.category];
@@ -210,7 +214,7 @@ function FilterItemCard({
     <ItemCardShell onRemove={onRemove} selected={selected} onToggleSelect={onToggleSelect}>
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-0.5">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Catégorie</span>
+          <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">{t("filter.category")}</span>
           <select
             value={item.category}
             onChange={(e) => {
@@ -221,7 +225,7 @@ function FilterItemCard({
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {t(`category.${c}`)}
               </option>
             ))}
           </select>
@@ -230,22 +234,22 @@ function FilterItemCard({
         {!NO_MODEL_CATEGORIES.has(item.category) &&
           (isEffectFilter ? (
             <DeviceNameField
-              label="Modèle"
+              label={t("filter.model")}
               value={item.model}
               onChange={(v) => onChange({ ...item, model: v })}
               onPick={(o) => onChange({ ...item, model: o.name })}
               options={EFFECT_FILTER_OPTIONS}
-              placeholder="Ex. Glimmer Glass"
+              placeholder={t("filter.modelPlaceholder")}
             />
           ) : selectModels ? (
             <label className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Modèle</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">{t("filter.model")}</span>
               <select
                 value={item.model}
                 onChange={(e) => onChange({ ...item, model: e.target.value })}
                 className="rounded-md border-[1.5px] border-black/40 bg-white px-2 py-1 text-sm font-semibold outline-none focus:border-black"
               >
-                <option value="">— Choisir —</option>
+                <option value="">{t("filter.chooseOption")}</option>
                 {selectModels.map((m) => (
                   <option key={m} value={m}>
                     {m}
@@ -254,12 +258,12 @@ function FilterItemCard({
               </select>
             </label>
           ) : (
-            <TextField label="Modèle" value={item.model} onChange={(v) => onChange({ ...item, model: v })} />
+            <TextField label={t("filter.model")} value={item.model} onChange={(v) => onChange({ ...item, model: v })} />
           ))}
 
         {isDiopter && (
           <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Taille</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">{t("filter.size")}</span>
             <select
               value={item.diopterSize}
               onChange={(e) => onChange({ ...item, diopterSize: e.target.value as "138" | "156" })}
@@ -273,7 +277,7 @@ function FilterItemCard({
 
         {isEffectFilter && (
           <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Taille</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">{t("filter.size")}</span>
             <select
               value={item.effectSize}
               onChange={(e) => onChange({ ...item, effectSize: e.target.value as FilterItem["effectSize"] })}
@@ -300,7 +304,7 @@ function FilterItemCard({
             value={item.front}
             onChange={(d) => onChange({ ...item, front: d })}
             tool={tool}
-            label="Av."
+            label={t("filter.front")}
           />
           <MarkableDiagram
             shape={item.shape}
@@ -314,7 +318,7 @@ function FilterItemCard({
             value={item.back}
             onChange={(d) => onChange({ ...item, back: d })}
             tool={tool}
-            label="Ar."
+            label={t("filter.back")}
           />
         </div>
       </div>
@@ -333,6 +337,7 @@ export function FilterReportView({
   items: FilterItem[];
   onItemsChange: (items: FilterItem[]) => void;
 }) {
+  const { t } = useLocale();
   const selection = useItemSelection<FilterItem>(items, onItemsChange, cloneFilterItem);
   const updateItem = (id: string, next: FilterItem) => onItemsChange(items.map((it) => (it.id === id ? next : it)));
   const removeItem = (id: string) => onItemsChange(items.filter((it) => it.id !== id));
@@ -341,9 +346,7 @@ export function FilterReportView({
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-5 p-6 print:max-w-full print:gap-1.5 print:p-2">
       <HeaderFields kind="filter" header={header} onChange={onHeaderChange} />
-      <p className="no-print text-xs italic text-black/50">
-        Choisissez un repère sur le bord du filtre (étiquette, encoche…) et dessinez-le afin de connaître son orientation.
-      </p>
+      <p className="no-print text-xs italic text-black/50">{t("filter.disclaimer")}</p>
       <div className="report-grid grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {items.map((it) => (
           <FilterItemCard
@@ -355,7 +358,7 @@ export function FilterReportView({
             onToggleSelect={() => selection.toggle(it.id)}
           />
         ))}
-        <AddItemTile onAdd={addItem} label="Ajouter un filtre" />
+        <AddItemTile onAdd={addItem} label={t("filter.addItem")} />
       </div>
       <SelectionActionBar
         count={selection.selected.size}

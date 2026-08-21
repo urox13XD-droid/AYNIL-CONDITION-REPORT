@@ -8,6 +8,7 @@ import { ItemCardShell } from "@/components/ItemCardShell";
 import { ActiveTool, autoDims, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
+import { useLocale } from "@/lib/i18n";
 import { useItemSelection } from "@/lib/useItemSelection";
 import { CAMERA_CATALOG, findCameraByName, getCameraById } from "@/lib/cameraCatalog";
 import { CameraItem, emptyDiagram, newId, ReportHeader } from "@/lib/types";
@@ -38,6 +39,7 @@ function CameraItemCard({
   selected: boolean;
   onToggleSelect: () => void;
 }) {
+  const { t } = useLocale();
   const [tool, setTool] = useState<ActiveTool>("pen");
   const device = item.deviceId ? getCameraById(item.deviceId) : undefined;
 
@@ -45,14 +47,14 @@ function CameraItemCard({
     <ItemCardShell onRemove={onRemove} selected={selected} onToggleSelect={onToggleSelect}>
       <div className="flex flex-col gap-3">
         <DeviceNameField
-          label="Caméra"
+          label={t("camera.cameraLabel")}
           value={item.name}
           onChange={(v) => onChange({ ...item, name: v, deviceId: findCameraByName(v)?.id })}
           onPick={(o) => onChange({ ...item, name: o.name, deviceId: o.id })}
           options={CAMERA_OPTIONS}
-          placeholder="Ex. Sony Venice 2"
+          placeholder={t("camera.cameraPlaceholder")}
         />
-        <TextField label="N° série (#)" value={item.serial} onChange={(v) => onChange({ ...item, serial: v })} mono />
+        <TextField label={t("optical.serial")} value={item.serial} onChange={(v) => onChange({ ...item, serial: v })} mono />
         <NotesField value={item.notes} onChange={(v) => onChange({ ...item, notes: v })} />
         <MarkToolPalette tool={tool} onToolChange={setTool} />
         <div className="flex flex-wrap items-end justify-center gap-3 pt-1">
@@ -62,7 +64,7 @@ function CameraItemCard({
             value={item.sensor}
             onChange={(d) => onChange({ ...item, sensor: d })}
             tool={tool}
-            label="Capteur"
+            label={t("camera.sensor")}
           />
           {device?.iconUrl && (
             <MarkableDiagram
@@ -73,7 +75,7 @@ function CameraItemCard({
               value={item.body}
               onChange={(d) => onChange({ ...item, body: d })}
               tool={tool}
-              label="Corps"
+              label={t("camera.body")}
             />
           )}
         </div>
@@ -93,6 +95,7 @@ export function CameraReportView({
   items: CameraItem[];
   onItemsChange: (items: CameraItem[]) => void;
 }) {
+  const { t } = useLocale();
   const selection = useItemSelection<CameraItem>(items, onItemsChange, cloneCameraItem);
   const updateItem = (id: string, next: CameraItem) => onItemsChange(items.map((it) => (it.id === id ? next : it)));
   const removeItem = (id: string) => onItemsChange(items.filter((it) => it.id !== id));
@@ -112,7 +115,7 @@ export function CameraReportView({
             onToggleSelect={() => selection.toggle(it.id)}
           />
         ))}
-        <AddItemTile onAdd={addItem} label="Ajouter une caméra" />
+        <AddItemTile onAdd={addItem} label={t("camera.addItem")} />
       </div>
       <SelectionActionBar
         count={selection.selected.size}

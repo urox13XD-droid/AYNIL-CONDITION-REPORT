@@ -1,3 +1,7 @@
+"use client";
+
+import { useLocale } from "@/lib/i18n";
+
 export function ItemCardShell({
   onRemove,
   selected = false,
@@ -12,6 +16,7 @@ export function ItemCardShell({
   cornerNotch?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const { t } = useLocale();
   return (
     <div
       className={`print-page relative rounded-xl border-[2.5px] bg-white p-3 shadow-comic ${
@@ -22,7 +27,7 @@ export function ItemCardShell({
         <button
           type="button"
           onClick={onToggleSelect}
-          title="Sélectionner"
+          title={t("item.select")}
           className={`no-print absolute -left-2.5 -top-2.5 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-black text-xs font-bold shadow-comic-sm ${
             selected ? "bg-black text-white" : "bg-white text-black hover:bg-black/10"
           }`}
@@ -33,7 +38,7 @@ export function ItemCardShell({
       <button
         type="button"
         onClick={onRemove}
-        title="Retirer cet appareil"
+        title={t("item.remove")}
         className="no-print absolute -right-2.5 -top-2.5 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-black bg-white text-xs font-bold shadow-comic-sm hover:bg-black hover:text-white"
       >
         ✕

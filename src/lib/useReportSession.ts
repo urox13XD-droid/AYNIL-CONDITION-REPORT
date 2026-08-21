@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocale } from "./i18n";
 import { deleteProject, listProjects, loadCurrent, newProjectId, saveCurrent, upsertProject } from "./storage";
 import { ConditionProject, emptyHeader, normalizeHeader, ReportHeader, ReportKind } from "./types";
 
@@ -29,6 +30,7 @@ interface History<T> {
 }
 
 export function useReportSession<T>(kind: ReportKind) {
+  const { t } = useLocale();
   const [session, setSession] = useState<Session<T>>({
     loaded: false,
     projectId: "",
@@ -182,17 +184,14 @@ export function useReportSession<T>(kind: ReportKind) {
   }, [buildProject, kind, session.projectId, session.title]);
 
   const createNew = useCallback(() => {
-    if (
-      latest.current.items.length > 0 &&
-      !window.confirm("Créer un nouveau rapport ? Les modifications non sauvegardées seront perdues.")
-    ) {
+    if (latest.current.items.length > 0 && !window.confirm(t("confirm.newReport"))) {
       return;
     }
     const header = emptyHeader();
     latest.current = { header, items: [] };
     resetHistory();
     setSession({ loaded: true, projectId: newProjectId(), title: BLANK_TITLE, header, items: [] });
-  }, []);
+  }, [t]);
 
   const open = useCallback(
     (id: string) => {
@@ -207,14 +206,35 @@ export function useReportSession<T>(kind: ReportKind) {
     [kind]
   );
 
+  // loads a project parsed from an imported .json file (from disk, not localStorage) — behaves
+  // like open() but also registers it into the saved-projects list so it shows up in "Ouvrir" afterwards
+  const importProject = useCallback(
+    (project: ConditionProject<T>) => {
+      const header = normalizeHeader(project.header);
+      const imported: ConditionProject<T> = {
+        ...project,
+        id: project.id || newProjectId(),
+        header,
+        updatedAt: Date.now(),
+      };
+      latest.current = { header, items: imported.items };
+      resetHistory();
+      setSession({ loaded: true, projectId: imported.id, title: imported.name || BLANK_TITLE, header, items: imported.items });
+      saveCurrent(kind, imported);
+      upsertProject(kind, imported);
+      setProjects(listProjects<T>(kind));
+    },
+    [kind]
+  );
+
   const remove = useCallback(
     (id: string) => {
-      if (!window.confirm("Supprimer ce rapport enregistré ?")) return false;
+      if (!window.confirm(t("confirm.deleteReport"))) return false;
       deleteProject(kind, id);
       setProjects(listProjects<T>(kind));
       return true;
     },
-    [kind]
+    [kind, t]
   );
 
   const exportJson = useCallback(() => {
@@ -237,6 +257,7 @@ export function useReportSession<T>(kind: ReportKind) {
     save,
     createNew,
     open,
+    importProject,
     remove,
     exportJson,
     undo,

@@ -115,20 +115,6 @@ export interface ConditionProject<T> {
   updatedAt: number;
 }
 
-export const REPORT_LABELS: Record<ReportKind, string> = {
-  optical: "Optical Report",
-  filter: "Filter Report",
-  monitoring: "Monitoring Report",
-  camera: "Camera Report",
-};
-
-export const REPORT_TITLES: Record<ReportKind, string> = {
-  optical: "État des optiques",
-  filter: "État des filtres",
-  monitoring: "État des moniteurs",
-  camera: "État des caméras",
-};
-
 export function newId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }

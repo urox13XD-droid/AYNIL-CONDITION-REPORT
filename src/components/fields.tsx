@@ -1,3 +1,7 @@
+"use client";
+
+import { useLocale } from "@/lib/i18n";
+
 export function TextField({
   label,
   value,
@@ -30,9 +34,10 @@ export function TextField({
 }
 
 export function NotesField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useLocale();
   return (
     <label className="flex flex-col gap-0.5">
-      <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">Notes</span>
+      <span className="text-[10px] font-bold uppercase tracking-wide text-black/60">{t("fields.notes")}</span>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}

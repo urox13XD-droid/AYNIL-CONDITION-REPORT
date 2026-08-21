@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { TranslationKey, useLocale } from "@/lib/i18n";
 import { DiagramState, Mark, MarkPoint, MarkTool, newId } from "@/lib/types";
 
 export type ActiveTool = MarkTool | "eraser";
@@ -67,13 +68,13 @@ const TOOL_ICON: Record<ActiveTool, React.ReactNode> = {
   ),
 };
 
-const TOOL_LABEL: Record<ActiveTool, string> = {
-  pen: "Libre",
-  "pen-thin": "Libre fin (micro-rayures)",
-  scratch: "Rayure",
-  impact: "Pok / impact",
-  smudge: "Tache",
-  eraser: "Gomme",
+const TOOL_LABEL_KEY: Record<ActiveTool, TranslationKey> = {
+  pen: "tool.pen",
+  "pen-thin": "tool.penThin",
+  scratch: "tool.scratch",
+  impact: "tool.impact",
+  smudge: "tool.smudge",
+  eraser: "tool.eraser",
 };
 
 const TOOL_ORDER: ActiveTool[] = ["pen", "pen-thin", "scratch", "impact", "smudge", "eraser"];
@@ -85,13 +86,14 @@ export function MarkToolPalette({
   tool: ActiveTool;
   onToolChange: (t: ActiveTool) => void;
 }) {
+  const { t: translate } = useLocale();
   return (
     <div className="no-print flex flex-wrap gap-1">
       {TOOL_ORDER.map((t) => (
         <button
           key={t}
           type="button"
-          title={TOOL_LABEL[t]}
+          title={translate(TOOL_LABEL_KEY[t])}
           onClick={() => onToolChange(t)}
           className={`flex h-7 w-7 items-center justify-center rounded-md border-[1.5px] border-black transition ${
             tool === t ? "bg-black text-white" : "bg-white text-black hover:bg-black/10"
@@ -170,6 +172,7 @@ export function MarkableDiagram({
   /** keep the on-screen size when printing — for one-off elements (e.g. a signature) that shouldn't shrink like the repeated item diagrams; applied via a pure-CSS print rule so it's never a JS-timing race */
   printFullSize?: boolean;
 }) {
+  const { t } = useLocale();
   const svgRef = useRef<SVGSVGElement>(null);
   const [draft, setDraft] = useState<MarkPoint[] | null>(null);
   const draftRef = useRef<MarkPoint[] | null>(null);
@@ -400,7 +403,7 @@ export function MarkableDiagram({
           <button
             type="button"
             onClick={clearAll}
-            title="Vider ce schéma"
+            title={t("tool.clearDiagram")}
             className="no-print absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] border-black bg-white text-[10px] font-bold shadow-comic-sm hover:bg-black hover:text-white"
           >
             ✕

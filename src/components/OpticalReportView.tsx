@@ -7,6 +7,7 @@ import { ItemCardShell } from "@/components/ItemCardShell";
 import { ActiveTool, autoDims, MarkableDiagram, MarkToolPalette } from "@/components/MarkableDiagram";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { NotesField, TextField } from "@/components/fields";
+import { useLocale } from "@/lib/i18n";
 import { useItemSelection } from "@/lib/useItemSelection";
 import { emptyDiagram, newId, OpticalEntry, OpticalItem, ReportHeader } from "@/lib/types";
 
@@ -40,11 +41,12 @@ function cloneOpticalEntry(entry: OpticalEntry): OpticalEntry {
 }
 
 function BodyNotchButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const { t } = useLocale();
   return (
     <button
       type="button"
       onClick={onToggle}
-      title={open ? "Masquer la carrosserie" : "Ajouter l'état de la carrosserie"}
+      title={open ? t("optical.bodyToggleOff") : t("optical.bodyToggleOn")}
       className={`no-print absolute -bottom-2.5 -right-2.5 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-black text-[11px] font-bold shadow-comic-sm ${
         open ? "bg-black text-white" : "bg-white text-black hover:bg-black/10"
       }`}
@@ -57,11 +59,12 @@ function BodyNotchButton({ open, onToggle }: { open: boolean; onToggle: () => vo
 }
 
 function SeriesNotchButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const { t } = useLocale();
   return (
     <button
       type="button"
       onClick={onToggle}
-      title={open ? "Retirer de la série" : "Fait partie d'une série (ex. Cooke S4)"}
+      title={open ? t("optical.seriesToggleOff") : t("optical.seriesToggleOn")}
       className={`no-print absolute -right-2.5 top-7 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-black text-[11px] font-bold shadow-comic-sm ${
         open ? "bg-black text-white" : "bg-white text-black hover:bg-black/10"
       }`}
@@ -88,6 +91,7 @@ function OpticalItemCard({
   selected: boolean;
   onToggleSelect: () => void;
 }) {
+  const { t } = useLocale();
   const [tool, setTool] = useState<ActiveTool>("pen");
 
   return (
@@ -106,23 +110,23 @@ function OpticalItemCard({
         {item.seriesOn && (
           <div className="flex items-center gap-2 rounded-md border-[2px] border-black bg-neutral-300 px-2.5 py-1 text-black">
             <span className="shrink-0 rounded-sm border-[1.5px] border-black/60 px-1 py-0.5 text-[9px] font-bold uppercase tracking-widest text-black/70">
-              Série
+              {t("optical.seriesBadge")}
             </span>
             <input
               value={item.seriesLabel}
               onChange={(e) => onChange({ ...item, seriesLabel: e.target.value })}
-              placeholder="Ex. Cooke S4"
+              placeholder={t("optical.seriesPlaceholder")}
               className="font-display min-w-0 flex-1 bg-transparent text-sm uppercase tracking-wide outline-none placeholder:text-black/30"
             />
           </div>
         )}
         <TextField
-          label={item.seriesOn ? "Focale" : "Optique"}
+          label={item.seriesOn ? t("optical.focalLabel") : t("optical.opticLabel")}
           value={item.name}
           onChange={(v) => onChange({ ...item, name: v })}
-          placeholder={item.seriesOn ? "Ex. 35mm" : "Ex. Cooke S4 35mm"}
+          placeholder={item.seriesOn ? t("optical.focalPlaceholder") : t("optical.opticPlaceholder")}
         />
-        <TextField label="N° série (#)" value={item.serial} onChange={(v) => onChange({ ...item, serial: v })} mono />
+        <TextField label={t("optical.serial")} value={item.serial} onChange={(v) => onChange({ ...item, serial: v })} mono />
         <NotesField value={item.notes} onChange={(v) => onChange({ ...item, notes: v })} />
         <MarkToolPalette tool={tool} onToolChange={setTool} />
         <div className="flex flex-wrap items-end justify-center gap-3 pt-1">
@@ -131,14 +135,14 @@ function OpticalItemCard({
             value={item.front}
             onChange={(d) => onChange({ ...item, front: d })}
             tool={tool}
-            label="Av."
+            label={t("optical.front")}
           />
           <MarkableDiagram
             shape="circle"
             value={item.back}
             onChange={(d) => onChange({ ...item, back: d })}
             tool={tool}
-            label="Ar."
+            label={t("optical.back")}
             size="sm"
           />
           {item.bodyOpen && (
@@ -150,7 +154,7 @@ function OpticalItemCard({
               value={item.body}
               onChange={(d) => onChange({ ...item, body: d })}
               tool={tool}
-              label="Carrosserie"
+              label={t("optical.body")}
             />
           )}
         </div>
@@ -170,6 +174,7 @@ export function OpticalReportView({
   items: OpticalEntry[];
   onItemsChange: (items: OpticalEntry[]) => void;
 }) {
+  const { t } = useLocale();
   const selection = useItemSelection<OpticalEntry>(items, onItemsChange, cloneOpticalEntry);
 
   const updateEntry = (id: string, next: OpticalEntry) => onItemsChange(items.map((e) => (e.id === id ? next : e)));
@@ -197,11 +202,7 @@ export function OpticalReportView({
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-5 p-6 print:max-w-full print:gap-1.5 print:p-2">
       <HeaderFields kind="optical" header={header} onChange={onHeaderChange} />
-      <p className="no-print text-xs italic text-black/50">
-        NB : pour repérer l&apos;orientation de l&apos;optique, marquez un point sur la monture à droite pour la face
-        avant, à gauche pour la face arrière. Le petit bouton en haut à droite de chaque optique permet de
-        l&apos;associer à une série (ex. Cooke S4) — le champ principal ne contient alors que la focale.
-      </p>
+      <p className="no-print text-xs italic text-black/50">{t("optical.disclaimer")}</p>
       <div className="report-grid grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {items.map((entry) => (
           <OpticalItemCard
@@ -214,7 +215,7 @@ export function OpticalReportView({
             onToggleSelect={() => selection.toggle(entry.id)}
           />
         ))}
-        <AddItemTile onAdd={addItem} label="Ajouter une optique" />
+        <AddItemTile onAdd={addItem} label={t("optical.addItem")} />
       </div>
       <SelectionActionBar
         count={selection.selected.size}

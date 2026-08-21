@@ -9,13 +9,15 @@ import { ReportTabs } from "@/components/ReportTabs";
 import { SharedSessionBar } from "@/components/SharedSessionBar";
 import { Toolbar } from "@/components/Toolbar";
 import { UndoRedoDock } from "@/components/UndoRedoDock";
+import { TranslationKey, useLocale } from "@/lib/i18n";
 import { useReportSession } from "@/lib/useReportSession";
 import { useSharedSession } from "@/lib/useSharedSession";
-import { CameraItem, FilterItem, MonitoringItem, OpticalEntry, ReportKind } from "@/lib/types";
+import { CameraItem, ConditionProject, FilterItem, MonitoringItem, OpticalEntry, ReportKind } from "@/lib/types";
 
 export default function Home() {
+  const { t } = useLocale();
   const [activeKind, setActiveKind] = useState<ReportKind>("optical");
-  const [toast, setToast] = useState<string | null>(null);
+  const [toastKey, setToastKey] = useState<TranslationKey | null>(null);
 
   const optical = useReportSession<OpticalEntry>("optical");
   const filter = useReportSession<FilterItem>("filter");
@@ -24,24 +26,55 @@ export default function Home() {
   const shared = useSharedSession(optical, filter, monitoring, camera);
 
   useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 1800);
+    if (!toastKey) return;
+    const t = setTimeout(() => setToastKey(null), 1800);
     return () => clearTimeout(t);
-  }, [toast]);
+  }, [toastKey]);
 
   const active =
     activeKind === "optical" ? optical : activeKind === "filter" ? filter : activeKind === "monitoring" ? monitoring : camera;
 
   const handleSave = useCallback(() => {
     active.save();
-    setToast("Rapport sauvegardé");
+    setToastKey("toast.saved");
   }, [active]);
 
   const handleDelete = useCallback(
     (id: string) => {
-      if (active.remove(id)) setToast("Rapport supprimé");
+      if (active.remove(id)) setToastKey("toast.deleted");
     },
     [active]
+  );
+
+  const handleImportFile = useCallback(
+    async (file: File) => {
+      try {
+        const text = await file.text();
+        const project = JSON.parse(text) as ConditionProject<unknown>;
+        switch (project.kind) {
+          case "optical":
+            optical.importProject(project as ConditionProject<OpticalEntry>);
+            break;
+          case "filter":
+            filter.importProject(project as ConditionProject<FilterItem>);
+            break;
+          case "monitoring":
+            monitoring.importProject(project as ConditionProject<MonitoringItem>);
+            break;
+          case "camera":
+            camera.importProject(project as ConditionProject<CameraItem>);
+            break;
+          default:
+            setToastKey("toast.importInvalid");
+            return;
+        }
+        setActiveKind(project.kind);
+        setToastKey("toast.imported");
+      } catch {
+        setToastKey("toast.importInvalid");
+      }
+    },
+    [optical, filter, monitoring, camera]
   );
 
   useEffect(() => {
@@ -69,6 +102,7 @@ export default function Home() {
         onSave={handleSave}
         onExportJson={active.exportJson}
         onPrint={() => window.print()}
+        onImportFile={handleImportFile}
         projects={active.projects}
         onOpenProject={active.open}
         onDeleteProject={handleDelete}
@@ -124,9 +158,9 @@ export default function Home() {
       <div className="no-print fixed bottom-5 right-5 z-30 flex items-center gap-3">
         <UndoRedoDock canUndo={active.canUndo} canRedo={active.canRedo} onUndo={active.undo} onRedo={active.redo} />
       </div>
-      {toast && (
+      {toastKey && (
         <div className="no-print fixed bottom-5 left-1/2 -translate-x-1/2 rounded-lg border-[2.5px] border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-wide text-white shadow-comic">
-          {toast}
+          {t(toastKey)}
         </div>
       )}
     </div>

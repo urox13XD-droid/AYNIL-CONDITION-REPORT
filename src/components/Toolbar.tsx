@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ComicButton } from "@/components/ComicButton";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLocale } from "@/lib/i18n";
 
 export interface ToolbarProject {
   id: string;
@@ -16,6 +18,7 @@ export function Toolbar({
   onSave,
   onExportJson,
   onPrint,
+  onImportFile,
   projects,
   onOpenProject,
   onDeleteProject,
@@ -26,11 +29,14 @@ export function Toolbar({
   onSave: () => void;
   onExportJson: () => void;
   onPrint: () => void;
+  onImportFile: (file: File) => void;
   projects: ToolbarProject[];
   onOpenProject: (id: string) => void;
   onDeleteProject: (id: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useLocale();
 
   return (
     <header className="no-print flex flex-col gap-2 border-b-[3px] border-black bg-white px-4 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
@@ -43,19 +49,28 @@ export function Toolbar({
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
         className="font-display min-w-0 rounded-lg border-[2px] border-black bg-white px-3 py-1.5 text-sm font-bold outline-none focus:shadow-comic-sm sm:flex-1"
-        placeholder="Nom du rapport…"
+        placeholder={t("toolbar.titlePlaceholder")}
       />
 
       <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0">
         <div className="relative shrink-0">
-          <ComicButton onClick={() => setMenuOpen((v) => !v)} title="Rapports enregistrés" className="shrink-0">
-            Ouvrir
+          <ComicButton onClick={() => setMenuOpen((v) => !v)} title={t("toolbar.reportsMenuTitle")} className="shrink-0">
+            {t("toolbar.open")}
           </ComicButton>
           {menuOpen && (
             <div className="absolute right-0 z-20 mt-2 w-64 rounded-lg border-[2.5px] border-black bg-white shadow-comic-lg">
+              <button
+                className="block w-full border-b border-black/10 px-3 py-2 text-left text-xs font-bold hover:bg-black hover:text-white"
+                onClick={() => {
+                  fileInputRef.current?.click();
+                  setMenuOpen(false);
+                }}
+              >
+                {t("toolbar.importFile")}
+              </button>
               <div className="max-h-72 overflow-y-auto">
                 {projects.length === 0 && (
-                  <p className="p-3 text-xs font-semibold text-black/50">Aucun rapport enregistré.</p>
+                  <p className="p-3 text-xs font-semibold text-black/50">{t("toolbar.noSavedReports")}</p>
                 )}
                 {projects.map((p) => (
                   <div
@@ -73,7 +88,7 @@ export function Toolbar({
                     </button>
                     <button
                       className="shrink-0 font-bold opacity-60 hover:opacity-100"
-                      title="Supprimer"
+                      title={t("toolbar.delete")}
                       onClick={() => onDeleteProject(p.id)}
                     >
                       ✕
@@ -83,24 +98,36 @@ export function Toolbar({
               </div>
             </div>
           )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onImportFile(file);
+              e.target.value = "";
+            }}
+          />
         </div>
 
         <ComicButton onClick={onNew} className="shrink-0">
-          Nouveau
+          {t("toolbar.new")}
         </ComicButton>
 
         <ComicButton onClick={onExportJson} className="shrink-0">
-          Export Project
+          {t("toolbar.exportProject")}
         </ComicButton>
         <ComicButton onClick={onPrint} className="shrink-0">
-          Imprimer
+          {t("toolbar.print")}
         </ComicButton>
         <ComicButton onClick={onPrint} className="shrink-0">
-          Export PDF
+          {t("toolbar.exportPdf")}
         </ComicButton>
         <ComicButton onClick={onSave} variant="solid" className="shrink-0">
-          Sauvegarder
+          {t("toolbar.save")}
         </ComicButton>
+        <LanguageSwitcher />
       </div>
     </header>
   );
